@@ -1,0 +1,2275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FIG. 09 — ANISOPTERA MECHANICA | Libellula Horologia 3D Study</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Import Map for Latest Three.js r186 (v0.186.1) ES Module + Addons -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #07101e;
+      --bg-panel: rgba(10, 20, 38, 0.76);
+      --border-line: rgba(212, 175, 55, 0.28);
+      --border-subtle: rgba(148, 163, 184, 0.16);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-gold: #d4af37;
+      --accent-cyan: #38bdf8;
+      --grid-color: rgba(56, 189, 248, 0.07);
+    }
+    body.theme-obsidian {
+      --bg-primary: #09090c;
+      --bg-panel: rgba(18, 18, 24, 0.80);
+      --border-line: rgba(229, 169, 109, 0.30);
+      --border-subtle: rgba(161, 161, 170, 0.15);
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --accent-gold: #e5a96d;
+      --accent-cyan: #f43f5e;
+      --grid-color: rgba(229, 169, 109, 0.05);
+    }
+    body.theme-parchment {
+      --bg-primary: #efe6d5;
+      --bg-panel: rgba(242, 233, 216, 0.84);
+      --border-line: rgba(120, 81, 35, 0.35);
+      --border-subtle: rgba(120, 81, 35, 0.18);
+      --text-main: #292018;
+      --text-muted: #6e5a44;
+      --accent-gold: #8c5823;
+      --accent-cyan: #1d6fa5;
+      --grid-color: rgba(120, 81, 35, 0.08);
+    }
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      transition: background-color 0.45s ease, color 0.35s ease;
+    }
+    .font-serif-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Blueprint background overlay */
+    .blueprint-grid {
+      background-image:
+        linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .hud-panel {
+      background: var(--bg-panel);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-line);
+      transition: all 0.3s ease;
+    }
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .hud-btn:hover {
+      border-color: var(--accent-gold);
+      color: var(--text-main);
+      background: rgba(212, 175, 55, 0.10);
+    }
+    .hud-btn.active {
+      background: rgba(212, 175, 55, 0.20);
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+      box-shadow: 0 0 12px rgba(212, 175, 55, 0.18);
+    }
+    /* Range sliders */
+    input[type="range"].mech-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--border-subtle);
+      border-radius: 2px;
+      outline: none;
+    }
+    input[type="range"].mech-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent-gold);
+      border: 2px solid var(--bg-primary);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+      transition: transform 0.15s ease;
+    }
+    input[type="range"].mech-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    /* 3D Callout Pins */
+    .callout-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: opacity 0.25s ease;
+    }
+    .callout-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-gold);
+      border: 2px solid var(--bg-primary);
+      box-shadow: 0 0 10px var(--accent-gold);
+      position: relative;
+    }
+    .callout-dot::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 1px solid var(--accent-gold);
+      opacity: 0.6;
+      animation: pulseRing 2.2s infinite;
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(2.1); opacity: 0; }
+    }
+    .corner-bracket {
+      position: relative;
+    }
+    .corner-bracket::before,
+    .corner-bracket::after {
+      content: '';
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-color: var(--accent-gold);
+      pointer-events: none;
+    }
+    .corner-bracket::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1.5px solid var(--accent-gold);
+      border-left: 1.5px solid var(--accent-gold);
+    }
+    .corner-bracket::after {
+      bottom: -1px;
+      right: -1px;
+      border-bottom: 1.5px solid var(--accent-gold);
+      border-right: 1.5px solid var(--accent-gold);
+    }
+  </style>
+</head>
+<body class="blueprint-grid">
+  <!-- WebGL Canvas Container -->
+  <div id="canvas-container" class="fixed inset-0 w-full h-full z-0"></div>
+
+  <!-- 4-View Split Overlay Lines & Labels (Shown only in 4-VIEWS mode) -->
+  <div id="quad-overlay" class="fixed inset-0 pointer-events-none z-10 hidden">
+    <div class="absolute inset-y-0 left-1/2 w-px" style="background: var(--border-line);"></div>
+    <div class="absolute inset-x-0 top-1/2 h-px" style="background: var(--border-line);"></div>
+    <div class="absolute top-20 left-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-gold);">VIEW 01 // ISO PERSPECTIVE</div>
+    <div class="absolute top-20 left-1/2 ml-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-gold);">VIEW 02 // DORSAL PLAN (TOP)</div>
+    <div class="absolute top-1/2 mt-3 left-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-gold);">VIEW 03 // ANTERIOR FRONT</div>
+    <div class="absolute top-1/2 mt-3 left-1/2 ml-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-gold);">VIEW 04 // LATERAL PROFILE</div>
+  </div>
+
+  <!-- 3D Dynamic Annotation Layer -->
+  <div id="annotations-layer" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+  <!-- Director Auto-Demo Banner & Recording Toast -->
+  <div id="demo-banner" class="fixed top-20 left-1/2 -translate-x-1/2 z-30 pointer-events-none hidden">
+    <div class="hud-panel corner-bracket px-4 py-2 rounded-sm flex flex-col items-center gap-1.5 min-w-[280px] sm:min-w-[360px]">
+      <div class="w-full flex items-center justify-between font-mono-tech text-[10px] tracking-widest uppercase">
+        <span id="demo-act-label" style="color: var(--accent-gold);">ACT I // ISOMETRIC HOROLOGICAL STUDY</span>
+        <span id="demo-time-label" style="color: var(--accent-cyan);">00.0s / 24.0s</span>
+      </div>
+      <div class="w-full h-1 bg-slate-800/80 rounded overflow-hidden">
+        <div id="demo-progress-bar" class="h-full transition-all duration-100" style="width: 0%; background: var(--accent-gold);"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rec-toast" class="fixed top-36 left-1/2 -translate-x-1/2 z-30 pointer-events-none hidden">
+    <div class="hud-panel px-3.5 py-1.5 rounded-sm font-mono-tech text-[11px] flex items-center gap-2 border" style="border-color: var(--accent-gold); color: var(--text-main);">
+      <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+      <span id="rec-toast-text">RECORDING 60FPS WEBGL STREAM...</span>
+    </div>
+  </div>
+
+  <!-- Top Engineering Header Bar -->
+  <header class="fixed top-0 inset-x-0 z-20 p-3 sm:p-5 flex flex-wrap items-start justify-between gap-3 pointer-events-none">
+    <div class="hud-panel corner-bracket px-4 py-3 rounded-sm pointer-events-auto max-w-md">
+      <div class="flex items-center gap-2 font-mono-tech text-[10px] sm:text-[11px] tracking-[0.2em] uppercase" style="color: var(--accent-gold);">
+        <span>FIG. 09 — ORNITHOPTER ANISOPTERA</span>
+        <span class="opacity-50">|</span>
+        <span>SCALE 1 : 1</span>
+      </div>
+      <div class="flex items-baseline gap-3 mt-0.5">
+        <h1 class="font-serif-title italic text-2xl sm:text-3xl font-semibold tracking-wide">Libellula Mechanica</h1>
+        <span class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded border" style="border-color: var(--border-line); color: var(--accent-cyan);">REV 4.2</span>
+      </div>
+      <p class="font-mono-tech text-[10px] tracking-wider uppercase mt-1" style="color: var(--text-muted);">
+        CONCEPT NO. 09: QUAD-WING COUNTER-PHASE HOROLOGICAL FLYING MACHINE
+      </p>
+    </div>
+
+    <!-- Top Right Utility & Theme Controls -->
+    <div class="flex flex-wrap items-center gap-2 pointer-events-auto">
+      <div class="hud-panel px-2.5 py-1.5 rounded-sm flex items-center gap-1.5">
+        <span class="font-mono-tech text-[10px] tracking-wider uppercase mr-1" style="color: var(--text-muted);">FINISH:</span>
+        <button id="theme-azure" class="hud-btn active font-mono-tech text-[10px] px-2 py-1 rounded-sm" title="蓝金工程图纸主题">AZURE &amp; GOLD</button>
+        <button id="theme-obsidian" class="hud-btn font-mono-tech text-[10px] px-2 py-1 rounded-sm" title="黑曜石玫瑰金主题">OBSIDIAN</button>
+        <button id="theme-parchment" class="hud-btn font-mono-tech text-[10px] px-2 py-1 rounded-sm" title="达芬奇手稿羊皮纸主题">DA VINCI</button>
+      </div>
+
+      <button id="btn-annotations" class="hud-panel hud-btn active font-mono-tech text-[10px] px-3 py-2 rounded-sm flex items-center gap-1.5" title="显示/隐藏 3D 结构标注点">
+        <span class="w-2 h-2 rounded-full" style="background: var(--accent-gold);"></span>
+        <span>CALLOUTS: ON</span>
+      </button>
+
+      <button id="btn-sound" class="hud-panel hud-btn font-mono-tech text-[10px] px-3 py-2 rounded-sm flex items-center gap-1.5" title="开启/关闭 机械发条与扑翼音效">
+        <span id="sound-indicator" class="w-2 h-2 rounded-full bg-slate-500"></span>
+        <span id="sound-label">AUDIO: OFF</span>
+      </button>
+
+      <button id="btn-auto-demo" class="hud-panel hud-btn font-mono-tech text-[10px] px-3 py-2 rounded-sm flex items-center gap-1.5" title="开启/停止 24秒自动导演运镜演示秀">
+        <span id="demo-indicator" class="w-2 h-2 rounded-full bg-sky-400"></span>
+        <span id="demo-btn-label">AUTO DEMO</span>
+      </button>
+
+      <button id="btn-rec-video" class="hud-panel hud-btn font-mono-tech text-[10px] px-3 py-2 rounded-sm flex items-center gap-1.5" title="录制并下载高清 WebGL 演示视频 (.webm)">
+        <span id="rec-indicator" class="w-2 h-2 rounded-full bg-rose-500"></span>
+        <span id="rec-btn-label">REC VIDEO</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry & Part Inspector Panel -->
+  <aside class="fixed left-3 sm:left-5 top-36 sm:top-40 z-20 w-56 sm:w-64 flex flex-col gap-2.5 pointer-events-none">
+    <!-- Live Telemetry Readout -->
+    <div class="hud-panel corner-bracket p-3.5 rounded-sm pointer-events-auto">
+      <div class="flex items-center justify-between border-b pb-1.5 mb-2.5" style="border-color: var(--border-subtle);">
+        <span class="font-mono-tech text-[10px] tracking-[0.18em] uppercase" style="color: var(--accent-gold);">TELEMETRY SPEC</span>
+        <span id="status-badge" class="font-mono-tech text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20" style="color: var(--accent-gold);">FLIGHT ACTIVE</span>
+      </div>
+      <div class="grid grid-cols-2 gap-y-2 gap-x-3 font-mono-tech text-xs">
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">WINGSPAN (翼展)</div>
+          <div id="metric-wingspan" class="font-semibold text-sm">0.32 m</div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">MASS (总质量)</div>
+          <div class="font-semibold text-sm">1.84 kg</div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">STROKE (扑翼角)</div>
+          <div id="metric-stroke" class="font-semibold text-sm">116°</div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">FREQUENCY (频率)</div>
+          <div id="metric-freq" class="font-semibold text-sm" style="color: var(--accent-cyan);">28.0 Hz</div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">PHASE LAG (前后翼差)</div>
+          <div id="metric-phase" class="font-semibold text-sm">90.0°</div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">ESCAPEMENT (擒纵转速)</div>
+          <div id="metric-rpm" class="font-semibold text-sm">1,680 RPM</div>
+        </div>
+      </div>
+
+      <!-- Phase Lag Control -->
+      <div class="mt-3 pt-2.5 border-t" style="border-color: var(--border-subtle);">
+        <div class="flex justify-between font-mono-tech text-[10px] mb-1">
+          <span style="color: var(--text-muted);">FORE/HIND PHASE (翼间相位)</span>
+          <span id="label-phase-slider" style="color: var(--accent-gold);">90°</span>
+        </div>
+        <input id="slider-phase" type="range" min="0" max="180" value="90" class="mech-slider" />
+      </div>
+    </div>
+
+    <!-- Selected Subsystem Inspector Card -->
+    <div id="inspector-card" class="hud-panel corner-bracket p-3.5 rounded-sm pointer-events-auto">
+      <div class="flex items-center justify-between mb-1">
+        <span id="part-code" class="font-mono-tech text-[10px] tracking-widest uppercase" style="color: var(--accent-cyan);">SYS-00 // FULL ASSEMBLY</span>
+        <button id="btn-reset-focus" class="font-mono-tech text-[9px] underline opacity-75 hover:opacity-100 hidden" style="color: var(--accent-gold);">RESET FOCUS</button>
+      </div>
+      <h2 id="part-title" class="font-serif-title italic text-lg font-semibold leading-tight">的四翼差速擒纵总成</h2>
+      <p id="part-desc" class="text-[11px] leading-relaxed mt-1.5" style="color: var(--text-muted);">
+        点击模型上的金色标注点或任意 3D 机械部件，即可聚焦查看该子系统的钟表传动结构与设计说明。拖动鼠标可 360° 旋转观察，滚轮缩放。
+      </p>
+      <div class="mt-2 pt-2 border-t flex items-center justify-between font-mono-tech text-[10px]" style="border-color: var(--border-subtle); color: var(--text-muted);">
+        <span>ALLOY: <strong id="part-material" class=" font-normal" style="color: var(--text-main);">C36000 Brass &amp; Blued Steel</strong></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Central Engineering Control Dock -->
+  <footer class="fixed bottom-0 inset-x-0 z-20 p-3 sm:p-5 flex flex-col lg:flex-row items-stretch lg:items-end justify-between gap-3 pointer-events-none">
+    <!-- Left/Center: Exploded View & Flight State Controls -->
+    <div class="hud-panel corner-bracket p-3.5 rounded-sm pointer-events-auto flex-1 max-w-2xl flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+      <!-- Flight Action Button -->
+      <div class="flex items-center gap-2">
+        <button id="btn-flight" class="hud-btn active font-mono-tech text-xs font-medium px-4 py-2.5 rounded-sm flex items-center gap-2 whitespace-nowrap">
+          <span id="flight-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          <span id="flight-btn-text">TAKE FLIGHT</span>
+        </button>
+        <button id="btn-hover-mode" class="hud-btn font-mono-tech text-[11px] px-3 py-2.5 rounded-sm whitespace-nowrap" title="切换急速振翅悬停 / 巡航掠飞姿态">
+          SURGE
+        </button>
+      </div>
+
+      <!-- Assembled <-> Exploded Slider -->
+      <div class="flex-1 flex flex-col justify-center">
+        <div class="flex items-center justify-between font-mono-tech text-[10px] tracking-wider mb-1.5">
+          <button id="btn-assembled" class="hover:underline cursor-pointer" style="color: var(--accent-gold);">ASSEMBLED (组装)</button>
+          <span id="explode-pct" class="px-1.5 py-0.2 rounded text-[10px]" style="color: var(--text-main);">0%</span>
+          <button id="btn-exploded" class="hover:underline cursor-pointer" style="color: var(--text-muted);">EXPLODED (爆炸拆解)</button>
+        </div>
+        <input id="slider-explode" type="range" min="0" max="100" value="0" class="mech-slider" />
+      </div>
+
+      <!-- Tempo Speed Slider -->
+      <div class="w-full sm:w-36 flex flex-col justify-center">
+        <div class="flex items-center justify-between font-mono-tech text-[10px] tracking-wider mb-1.5">
+          <span style="color: var(--text-muted);">TEMPO (速率)</span>
+          <span id="tempo-val" style="color: var(--accent-gold);">1.0x</span>
+        </div>
+        <input id="slider-tempo" type="range" min="5" max="250" value="100" class="mech-slider" />
+      </div>
+    </div>
+
+    <!-- Right: Camera Angles & Multi-Viewport Dock -->
+    <div class="hud-panel corner-bracket p-3 rounded-sm pointer-events-auto flex flex-wrap items-center gap-1.5">
+      <span class="font-mono-tech text-[10px] tracking-wider uppercase mr-1" style="color: var(--text-muted);">CAMERA:</span>
+      <button id="cam-iso" class="hud-btn active font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm">ISO</button>
+      <button id="cam-plan" class="hud-btn font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm">PLAN</button>
+      <button id="cam-front" class="hud-btn font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm">FRONT</button>
+      <button id="cam-profile" class="hud-btn font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm">PROFILE</button>
+      <div class="h-4 w-px mx-1" style="background: var(--border-subtle);"></div>
+      <button id="btn-orbit" class="hud-btn font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm">ORBIT</button>
+      <button id="btn-quad-view" class="hud-btn font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm" title="切换单视图 / 四视图工程蓝图同屏">1-4 VIEWS</button>
+    </div>
+  </footer>
+
+  <script>
+    (async function () {
+      if (!window.THREE || parseInt(window.THREE.REVISION || '0', 10) < 180) {
+        try {
+          const latestThree = await import('https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js')
+            .catch(() => import('https://unpkg.com/three@0.186.1/build/three.module.min.js'));
+          if (latestThree && latestThree.WebGLRenderer) {
+            window.THREE = latestThree;
+          }
+        } catch (err) {
+          await new Promise((resolve) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+            s.onload = resolve;
+            s.onerror = resolve;
+            document.head.appendChild(s);
+          });
+        }
+      }
+      const THREE = window.THREE;
+      // ==========================================
+      // 1. APPLICATION STATE & SUBSYSTEM METADATA
+      // ==========================================
+      const state = {
+        inFlight: true,
+        surgeMode: false,
+        explodeFactor: 0.0,
+        targetExplode: 0.0,
+        tempo: 1.0,
+        phaseOffsetDeg: 90,
+        autoOrbit: false,
+        quadView: false,
+        showAnnotations: true,
+        soundEnabled: false,
+        theme: 'azure',
+        selectedPart: null,
+        simTime: 0,
+        demoActive: false,
+        demoElapsed: 0,
+        demoDuration: 24.0,
+        isRecording: false
+      };
+
+      const SUBSYSTEM_INFO = {
+        all: {
+          code: 'SYS-00 // FULL ASSEMBLY',
+          title: '四翼差速擒纵机械蜻蜓总成',
+          desc: '灵感源自达芬奇扑翼手稿与瑞士高复杂陀飞轮工艺。四片金丝镂空翼由同轴差速齿轮箱驱动，配合十节配重尾椎实现反相气动平衡。',
+          material: 'C36000 Brass, Blued Steel & Crystal'
+        },
+        head: {
+          code: 'SYS-01 // COMPOUND OPTICS',
+          title: '双联复眼光学寻的转塔',
+          desc: '由发蓝钢外环、12叶黄铜可变光圈与多面体蚀刻水晶透镜组成，颈部配备双轴万向节与微型液压阻尼杆，可在飞行中保持视觉地平线稳定。',
+          material: 'Faceted Quartz Crystal & Blued Steel',
+          camOffset: { theta: 0.45, phi: 1.25, radius: 7.5 },
+          targetPos: new THREE.Vector3(0, 0.3, 3.3)
+        },
+        thorax: {
+          code: 'SYS-02 // DIFFERENTIAL GEARBOX',
+          title: '同轴差速齿轮箱与双发条盒',
+          desc: '胸腔采用镂空肋骨式黄铜机架，内部集成主发条盒、中央冠轮、前后翼偏心曲柄连杆及高频红宝石擒纵轮，将旋转扭矩转化为四翼往复拍击。',
+          material: 'Hand-Polished Brass & Synthetic Ruby',
+          camOffset: { theta: 0.7, phi: 1.15, radius: 7.2 },
+          targetPos: new THREE.Vector3(0, 0.2, 0.8)
+        },
+        forewings: {
+          code: 'SYS-03 // FORE FILIGREE WINGS',
+          title: '前掠金丝镂空主升力翼 (Forewings)',
+          desc: '前翼采用双管状前缘主梁（Costa）与仿生多边形金丝翅脉网格，翅端镶嵌高密度黄金翼痣（Pterostigma）配重块，消除高速扑翼颤振。',
+          material: 'Gold Filigree & Iridescent Mica Membrane',
+          camOffset: { theta: 0.3, phi: 0.85, radius: 11.5 },
+          targetPos: new THREE.Vector3(0, 0.6, 1.3)
+        },
+        hindwings: {
+          code: 'SYS-04 // HIND COUNTER-PHASE WINGS',
+          title: '后置异相推进翼 (Hindwings)',
+          desc: '翼根宽阔的后翼与前翼保持可调相位差（默认 90°），通过8字形攻角扭转（Feathering）回收前翼尾流涡环，提供瞬时悬停与急停推力。',
+          material: 'Gold Filigree & Blued Steel Hinge',
+          camOffset: { theta: -0.5, phi: 0.9, radius: 11.5 },
+          targetPos: new THREE.Vector3(0, 0.5, 0.1)
+        },
+        abdomen: {
+          code: 'SYS-05 // ARTICULATED ABDOMEN',
+          title: '十节铰接惯性配重尾椎',
+          desc: '由 10 节渐缩八角黄铜环筒与发蓝钢背鳍串联而成，内置陀螺平衡芯轴，随扑翼频率产生正弦传导波，末端双尾铗可随航速自动开合。',
+          material: 'Turned Brass Rings & Blued Dorsal Fins',
+          camOffset: { theta: 1.05, phi: 1.2, radius: 10.5 },
+          targetPos: new THREE.Vector3(0, 0.0, -3.8)
+        },
+        legs: {
+          code: 'SYS-06 // RAPTORIAL LANDING GEAR',
+          title: '六足精密连杆起落架',
+          desc: '三对四关节机械足（基节、带螺旋弹簧的桁架股节、刺状胫节与三爪跗节）。起飞时自动向胸腔下方收拢成流线型抱笼姿态，待机时展开支撑。',
+          material: 'Hardened Blued Steel & Copper Springs',
+          camOffset: { theta: 0.6, phi: 1.48, radius: 8.2 },
+          targetPos: new THREE.Vector3(0, -1.2, 1.0)
+        }
+      };
+
+      // ==========================================
+      // 2. THREE.JS SCENE, RENDERER & CAMERAS
+      // ==========================================
+      const container = document.getElementById('canvas-container');
+      const scene = new THREE.Scene();
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.18;
+      container.appendChild(renderer.domElement);
+
+      // Main perspective camera
+      const mainCamera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 200);
+
+      // Secondary cameras for 4-VIEWS mode
+      const topCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+      const frontCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+      const sideCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+
+      // Custom Damped Spherical Orbit Controller
+      const camSpherical = {
+        radius: 15.5,
+        theta: 0.68, // horizontal angle
+        phi: 1.12,   // vertical angle from top
+        target: new THREE.Vector3(0, 0.1, -0.4)
+      };
+      const camTargetSpherical = {
+        radius: 15.5,
+        theta: 0.68,
+        phi: 1.12,
+        target: new THREE.Vector3(0, 0.1, -0.4)
+      };
+
+      // ==========================================
+      // 3. PROCEDURAL STUDIO ENVIRONMENT & LIGHTS
+      // ==========================================
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+
+      function buildStudioEnvMap(themeName) {
+        const envScene = new THREE.Scene();
+        envScene.background = new THREE.Color(
+          themeName === 'parchment' ? 0xd8ccb8 : (themeName === 'obsidian' ? 0x09090d : 0x071224)
+        );
+        const boxGeo = new THREE.SphereGeometry(2, 16, 16);
+        const warmMat = new THREE.MeshBasicMaterial({ color: 0xfffaed });
+        const goldMat = new THREE.MeshBasicMaterial({ color: 0xffc864 });
+        const coolMat = new THREE.MeshBasicMaterial({
+          color: themeName === 'obsidian' ? 0xff7b54 : 0x58c4ff
+        });
+
+        const strip1 = new THREE.Mesh(new THREE.BoxGeometry(30, 2, 10), warmMat);
+        strip1.position.set(0, 20, 10);
+        envScene.add(strip1);
+
+        const strip2 = new THREE.Mesh(new THREE.BoxGeometry(20, 12, 2), goldMat);
+        strip2.position.set(18, 4, -12);
+        envScene.add(strip2);
+
+        const strip3 = new THREE.Mesh(new THREE.BoxGeometry(2, 12, 24), coolMat);
+        strip3.position.set(-20, 5, 0);
+        envScene.add(strip3);
+
+        const strip4 = new THREE.Mesh(boxGeo, warmMat);
+        strip4.scale.set(8, 1, 8);
+        strip4.position.set(0, -18, 0);
+        envScene.add(strip4);
+
+        const rt = pmremGenerator.fromScene(envScene, 0.04);
+        return rt.texture;
+      }
+
+      scene.environment = buildStudioEnvMap('azure');
+
+      const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 0.75);
+      scene.add(hemiLight);
+
+      const keyLight = new THREE.DirectionalLight(0xfff4d6, 2.4);
+      keyLight.position.set(9, 14, 10);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.width = 2048;
+      keyLight.shadow.mapSize.height = 2048;
+      keyLight.shadow.camera.near = 2;
+      keyLight.shadow.camera.far = 35;
+      const d = 10;
+      keyLight.shadow.camera.left = -d;
+      keyLight.shadow.camera.right = d;
+      keyLight.shadow.camera.top = d;
+      keyLight.shadow.camera.bottom = -d;
+      keyLight.shadow.bias = -0.0005;
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.5);
+      rimLight.position.set(-10, 6, -9);
+      scene.add(rimLight);
+
+      const underLight = new THREE.DirectionalLight(0xd4af37, 0.85);
+      underLight.position.set(0, -10, 4);
+      scene.add(underLight);
+
+      const coreGlowLight = new THREE.PointLight(0x38bdf8, 1.8, 7);
+      coreGlowLight.position.set(0, 0.25, 0.8);
+      scene.add(coreGlowLight);
+
+      // ==========================================
+      // 4. HOROLOGICAL MATERIALS PALETTE
+      // ==========================================
+      const materials = {
+        brassPolished: new THREE.MeshStandardMaterial({
+          color: 0xd9a74a,
+          metalness: 0.92,
+          roughness: 0.16
+        }),
+        brassBrushed: new THREE.MeshStandardMaterial({
+          color: 0xb8862d,
+          metalness: 0.86,
+          roughness: 0.30
+        }),
+        goldFiligree: new THREE.MeshStandardMaterial({
+          color: 0xecc66c,
+          metalness: 0.94,
+          roughness: 0.14,
+          side: THREE.DoubleSide
+        }),
+        bluedSteel: new THREE.MeshStandardMaterial({
+          color: 0x1d3b5c,
+          metalness: 0.90,
+          roughness: 0.22
+        }),
+        darkGunmetal: new THREE.MeshStandardMaterial({
+          color: 0x1e242b,
+          metalness: 0.85,
+          roughness: 0.34
+        }),
+        copperCoil: new THREE.MeshStandardMaterial({
+          color: 0xc8643c,
+          metalness: 0.90,
+          roughness: 0.20
+        }),
+        rubyJewel: new THREE.MeshPhysicalMaterial({
+          color: 0xe11d48,
+          emissive: 0x4c0519,
+          emissiveIntensity: 0.35,
+          metalness: 0.1,
+          roughness: 0.08,
+          transparent: true,
+          opacity: 0.88
+        }),
+        crystalLens: new THREE.MeshPhysicalMaterial({
+          color: 0x38bdf8,
+          emissive: 0x0284c7,
+          emissiveIntensity: 0.30,
+          metalness: 0.15,
+          roughness: 0.08,
+          transparent: true,
+          opacity: 0.72
+        }),
+        wingMembrane: new THREE.MeshPhysicalMaterial({
+          color: 0xbae6fd,
+          emissive: 0x0369a1,
+          emissiveIntensity: 0.12,
+          metalness: 0.25,
+          roughness: 0.12,
+          transparent: true,
+          opacity: 0.28,
+          side: THREE.DoubleSide
+        }),
+        blueprintLine: new THREE.LineBasicMaterial({
+          color: 0x38bdf8,
+          transparent: true,
+          opacity: 0.32
+        }),
+        goldLine: new THREE.LineBasicMaterial({
+          color: 0xd4af37,
+          transparent: true,
+          opacity: 0.50
+        }),
+        leaderDash: new THREE.LineDashedMaterial({
+          color: 0xd4af37,
+          dashSize: 0.16,
+          gapSize: 0.10,
+          transparent: true,
+          opacity: 0.0
+        })
+      };
+
+      // ==========================================
+      // 5. PROCEDURAL MECHANICAL COMPONENT BUILDERS
+      // ==========================================
+      const interactableMeshes = [];
+      function tagSubsystem(object3d, subsystemKey) {
+        object3d.traverse((child) => {
+          if (child.isMesh) {
+            child.userData.subsystem = subsystemKey;
+            child.castShadow = true;
+            child.receiveShadow = true;
+            interactableMeshes.push(child);
+          }
+        });
+      }
+
+      // Helper: Real Toothed Horological Spur Gear with Spokes & Ruby Jewel
+      function createSpurGear(radius, teeth, thickness, spokeCount, gearMat, hubMat) {
+        const gearGroup = new THREE.Group();
+        const outerR = radius;
+        const innerR = radius * 0.86;
+        const ringInnerR = radius * 0.68;
+        const hubR = radius * 0.26;
+
+        // Rim cylinder with hollow center via Torus + flat rings or ExtrudeShape
+        const shape = new THREE.Shape();
+        const totalSteps = teeth * 4;
+        for (let i = 0; i <= totalSteps; i++) {
+          const angle = (i / totalSteps) * Math.PI * 2;
+          const mod = i % 4;
+          const r = (mod === 1 || mod === 2) ? outerR : innerR;
+          const x = Math.cos(angle) * r;
+          const y = Math.sin(angle) * r;
+          if (i === 0) shape.moveTo(x, y);
+          else shape.lineTo(x, y);
+        }
+
+        // Cut out inner windows if spokes exist
+        if (spokeCount > 0 && radius > 0.22) {
+          for (let s = 0; s < spokeCount; s++) {
+            const aStart = (s / spokeCount) * Math.PI * 2 + 0.16;
+            const aEnd = ((s + 1) / spokeCount) * Math.PI * 2 - 0.16;
+            if (aEnd > aStart) {
+              const hole = new THREE.Path();
+              const arcSteps = 8;
+              for (let k = 0; k <= arcSteps; k++) {
+                const a = aStart + (k / arcSteps) * (aEnd - aStart);
+                const px = Math.cos(a) * ringInnerR;
+                const py = Math.sin(a) * ringInnerR;
+                if (k === 0) hole.moveTo(px, py);
+                else hole.lineTo(px, py);
+              }
+              for (let k = arcSteps; k >= 0; k--) {
+                const a = aStart + (k / arcSteps) * (aEnd - aStart);
+                const px = Math.cos(a) * (hubR * 1.15);
+                const py = Math.sin(a) * (hubR * 1.15);
+                hole.lineTo(px, py);
+              }
+              hole.closePath();
+              shape.holes.push(hole);
+            }
+          }
+        }
+
+        const extrudeSettings = {
+          depth: thickness,
+          bevelEnabled: true,
+          bevelSegments: 1,
+          steps: 1,
+          bevelSize: thickness * 0.12,
+          bevelThickness: thickness * 0.12
+        };
+        const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        geo.center();
+        const mesh = new THREE.Mesh(geo, gearMat || materials.brassPolished);
+        gearGroup.add(mesh);
+
+        // Central collar & Ruby bearing jewel
+        const collarGeo = new THREE.CylinderGeometry(hubR, hubR, thickness * 1.6, 16);
+        collarGeo.rotateX(Math.PI / 2);
+        const collar = new THREE.Mesh(collarGeo, hubMat || materials.bluedSteel);
+        gearGroup.add(collar);
+
+        const jewelGeo = new THREE.CylinderGeometry(hubR * 0.55, hubR * 0.55, thickness * 1.85, 12);
+        jewelGeo.rotateX(Math.PI / 2);
+        const jewel = new THREE.Mesh(jewelGeo, materials.rubyJewel);
+        gearGroup.add(jewel);
+
+        const axleGeo = new THREE.CylinderGeometry(hubR * 0.22, hubR * 0.22, thickness * 2.5, 10);
+        axleGeo.rotateX(Math.PI / 2);
+        const axle = new THREE.Mesh(axleGeo, materials.brassPolished);
+        gearGroup.add(axle);
+
+        return gearGroup;
+      }
+
+      // ==========================================
+      // 6. ASSEMBLE THE DRAGONFLY ("LIBELLULA MECHANICA")
+      // ==========================================
+      const dragonflyRoot = new THREE.Group();
+      scene.add(dragonflyRoot);
+
+      // Explorable sub-groups with base positions and explode vectors
+      const subsystems = {};
+      function registerSubsystem(key, group, explodeVec) {
+        group.userData.basePos = group.position.clone();
+        group.userData.explodeVec = explodeVec;
+        subsystems[key] = group;
+        dragonflyRoot.add(group);
+      }
+
+      // ------------------------------------------
+      // A. HEAD & COMPOUND OPTICAL TURRET (SYS-01)
+      // ------------------------------------------
+      const headGroup = new THREE.Group();
+      headGroup.position.set(0, 0.25, 2.95);
+      registerSubsystem('head', headGroup, new THREE.Vector3(0, 0.55, 2.3));
+
+      // Central cranium bridge
+      const craniumGeo = new THREE.SphereGeometry(0.46, 20, 16);
+      craniumGeo.scale(1.15, 0.85, 1.05);
+      const cranium = new THREE.Mesh(craniumGeo, materials.bluedSteel);
+      headGroup.add(cranium);
+
+      // Brass crest armor plate on top of head
+      const crestGeo = new THREE.CylinderGeometry(0.32, 0.45, 0.22, 6);
+      const crest = new THREE.Mesh(crestGeo, materials.brassPolished);
+      crest.position.set(0, 0.28, 0.05);
+      headGroup.add(crest);
+
+      // Twin Compound Optical Domes (Left & Right)
+      [-1, 1].forEach((side) => {
+        const eyeUnit = new THREE.Group();
+        eyeUnit.position.set(side * 0.46, 0.06, 0.14);
+        eyeUnit.rotation.y = side * 0.35;
+
+        // Bezel ring
+        const bezel = new THREE.Mesh(
+          new THREE.TorusGeometry(0.38, 0.055, 14, 28),
+          materials.brassPolished
+        );
+        eyeUnit.add(bezel);
+
+        // Secondary blued-steel retaining ring with rivets
+        const retainer = new THREE.Mesh(
+          new THREE.TorusGeometry(0.32, 0.03, 12, 24),
+          materials.bluedSteel
+        );
+        retainer.position.z = 0.04;
+        eyeUnit.add(retainer);
+
+        // Faceted geodesic crystal lens dome
+        const domeGeo = new THREE.IcosahedronGeometry(0.34, 2);
+        const dome = new THREE.Mesh(domeGeo, materials.crystalLens);
+        dome.scale.set(1, 1, 0.72);
+        dome.position.z = 0.05;
+        eyeUnit.add(dome);
+
+        // Gold wireframe facet overlay on the compound eye
+        const wireGeo = new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(0.345, 1));
+        const wire = new THREE.LineSegments(wireGeo, materials.goldLine);
+        wire.scale.set(1, 1, 0.72);
+        wire.position.z = 0.05;
+        eyeUnit.add(wire);
+
+        // Internal ruby optical core
+        const pupil = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.12, 0.08, 0.16, 12),
+          materials.rubyJewel
+        );
+        pupil.rotation.x = Math.PI / 2;
+        pupil.position.z = 0.08;
+        eyeUnit.add(pupil);
+
+        headGroup.add(eyeUnit);
+
+        // Articulated Antennae
+        const antGroup = new THREE.Group();
+        antGroup.position.set(side * 0.22, 0.22, 0.42);
+        antGroup.rotation.set(-0.45, side * 0.4, 0);
+        const seg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.028, 0.55, 8), materials.brassPolished);
+        seg1.position.y = 0.27;
+        antGroup.add(seg1);
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.038, 10, 10), materials.rubyJewel);
+        tip.position.y = 0.56;
+        antGroup.add(tip);
+        headGroup.add(antGroup);
+
+        // Mechanical Mandibles
+        const mandible = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.36, 5), materials.brassBrushed);
+        mandible.position.set(side * 0.18, -0.22, 0.35);
+        mandible.rotation.set(Math.PI * 0.6, 0, side * 0.45);
+        headGroup.add(mandible);
+      });
+
+      // Neck gimbal & twin hydraulic damper pistons
+      const neckJoint = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.45, 14), materials.copperCoil);
+      neckJoint.rotation.x = Math.PI / 2;
+      neckJoint.position.set(0, -0.02, -0.42);
+      headGroup.add(neckJoint);
+
+      tagSubsystem(headGroup, 'head');
+
+      // ------------------------------------------
+      // B. THORAX CHASSIS & DIFFERENTIAL GEARBOX (SYS-02)
+      // ------------------------------------------
+      const thoraxGroup = new THREE.Group();
+      thoraxGroup.position.set(0, 0.2, 0.85);
+      registerSubsystem('thorax', thoraxGroup, new THREE.Vector3(0, 1.35, 0));
+
+      // Main longitudinal spine rails (Blued steel)
+      [-0.38, 0.38].forEach((xOff) => {
+        const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 2.75, 12), materials.bluedSteel);
+        rail.rotation.x = Math.PI / 2;
+        rail.position.set(xOff, 0.12, 0);
+        thoraxGroup.add(rail);
+
+        const lowerRail = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 2.45, 12), materials.brassBrushed);
+        lowerRail.rotation.x = Math.PI / 2;
+        lowerRail.position.set(xOff * 0.85, -0.42, 0);
+        thoraxGroup.add(lowerRail);
+      });
+
+      // 7 Curved Brass Skeletal Ribs forming the open horological cage
+      for (let i = 0; i < 7; i++) {
+        const zPos = -1.15 + i * 0.38;
+        const scaleCurve = 1.0 - Math.pow((i - 3) / 4.2, 2) * 0.35;
+        const rib = new THREE.Mesh(
+          new THREE.TorusGeometry(0.68 * scaleCurve, 0.042, 10, 28, Math.PI * 1.45),
+          i % 2 === 0 ? materials.brassPolished : materials.bluedSteel
+        );
+        rib.position.set(0, -0.02, zPos);
+        rib.rotation.z = -Math.PI * 0.225;
+        thoraxGroup.add(rib);
+
+        // Top rivet bosses on each rib
+        const boss = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.08, 6), materials.brassPolished);
+        boss.position.set(0, 0.66 * scaleCurve, zPos);
+        thoraxGroup.add(boss);
+      }
+
+      // Dorsal Escapement Bridge Plate (ornate watch bridge on top of thorax)
+      const bridgePlate = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.06, 2.1), materials.brassPolished);
+      bridgePlate.position.set(0, 0.68, 0.0);
+      thoraxGroup.add(bridgePlate);
+
+      // Internal Animated Gears & Linkages inside the Thorax Cage
+      const animatedGears = [];
+
+      // 1. Central Mainspring Barrel (Horizontal axis)
+      const mainspringGear = createSpurGear(0.52, 24, 0.18, 6, materials.brassPolished, materials.bluedSteel);
+      mainspringGear.position.set(0, -0.05, 0.0);
+      mainspringGear.rotation.y = Math.PI / 2;
+      thoraxGroup.add(mainspringGear);
+      animatedGears.push({ mesh: mainspringGear, axis: 'z', ratio: 1.0 });
+
+      // Copper induction / mainspring coil core inside thorax
+      const coilCore = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.65, 20), materials.copperCoil);
+      coilCore.rotation.z = Math.PI / 2;
+      coilCore.position.set(0, -0.05, 0.0);
+      thoraxGroup.add(coilCore);
+
+      // 2. Forewing Drive Gear (Front of thorax)
+      const foreDriveGear = createSpurGear(0.42, 20, 0.14, 5, materials.goldFiligree, materials.bluedSteel);
+      foreDriveGear.position.set(0, 0.18, 0.68);
+      foreDriveGear.rotation.y = Math.PI / 2;
+      thoraxGroup.add(foreDriveGear);
+      animatedGears.push({ mesh: foreDriveGear, axis: 'z', ratio: -1.4 });
+
+      // 3. Hindwing Drive Gear (Rear of thorax)
+      const hindDriveGear = createSpurGear(0.42, 20, 0.14, 5, materials.goldFiligree, materials.bluedSteel);
+      hindDriveGear.position.set(0, 0.18, -0.68);
+      hindDriveGear.rotation.y = Math.PI / 2;
+      thoraxGroup.add(hindDriveGear);
+      animatedGears.push({ mesh: hindDriveGear, axis: 'z', ratio: -1.4 });
+
+      // 4. Dorsal Tourbillon / Balance Escapement Wheel (Top horizontal plane)
+      const balanceWheel = createSpurGear(0.36, 18, 0.08, 4, materials.brassPolished, materials.rubyJewel);
+      balanceWheel.position.set(0, 0.76, 0.0);
+      balanceWheel.rotation.x = Math.PI / 2;
+      thoraxGroup.add(balanceWheel);
+      animatedGears.push({ mesh: balanceWheel, axis: 'z', ratio: 3.0, oscillate: true });
+
+      // 5. Left & Right Bevel Transmission Gears
+      [-1, 1].forEach((side) => {
+        const sideGear = createSpurGear(0.34, 16, 0.10, 4, materials.bluedSteel, materials.brassPolished);
+        sideGear.position.set(side * 0.48, 0.08, 0.34);
+        sideGear.rotation.y = Math.PI / 2;
+        thoraxGroup.add(sideGear);
+        animatedGears.push({ mesh: sideGear, axis: 'z', ratio: side * 1.8 });
+
+        const rearSideGear = createSpurGear(0.34, 16, 0.10, 4, materials.bluedSteel, materials.brassPolished);
+        rearSideGear.position.set(side * 0.48, 0.08, -0.34);
+        rearSideGear.rotation.y = Math.PI / 2;
+        thoraxGroup.add(rearSideGear);
+        animatedGears.push({ mesh: rearSideGear, axis: 'z', ratio: -side * 1.8 });
+      });
+
+      // Vertical Reciprocating Piston Rods (driven by wing stroke)
+      const pistonRods = [];
+      [
+        { x: -0.36, z: 0.58, isFore: true, side: -1 },
+        { x: 0.36, z: 0.58, isFore: true, side: 1 },
+        { x: -0.36, z: -0.58, isFore: false, side: -1 },
+        { x: 0.36, z: -0.58, isFore: false, side: 1 }
+      ].forEach((cfg) => {
+        const rod = new THREE.Group();
+        rod.position.set(cfg.x, 0.35, cfg.z);
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.65, 8), materials.brassPolished);
+        rod.add(shaft);
+        const clevisTop = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), materials.rubyJewel);
+        clevisTop.position.y = 0.32;
+        rod.add(clevisTop);
+        const clevisBot = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), materials.bluedSteel);
+        clevisBot.position.y = -0.32;
+        rod.add(clevisBot);
+        thoraxGroup.add(rod);
+        pistonRods.push({ group: rod, isFore: cfg.isFore, side: cfg.side });
+      });
+
+      tagSubsystem(thoraxGroup, 'thorax');
+
+      // ------------------------------------------
+      // C. FOUR ARTICULATED FILIGREE WINGS (SYS-03 & SYS-04)
+      // ------------------------------------------
+      // Helper to build a single ornate horological dragonfly wing
+      function buildMechanicalWing(side, isForewing) {
+        const pivotGroup = new THREE.Group();
+        const span = isForewing ? 5.6 : 5.1;
+        const maxChord = isForewing ? 1.15 : 1.48;
+        const sweep = isForewing ? 0.12 : -0.10;
+
+        // 1. Machined Wing Root Hinge Assembly
+        const rootBracket = new THREE.Mesh(
+          new THREE.BoxGeometry(0.42, 0.16, 0.36),
+          materials.bluedSteel
+        );
+        rootBracket.position.x = side * 0.2;
+        pivotGroup.add(rootBracket);
+
+        const rootGear = createSpurGear(0.24, 14, 0.08, 0, materials.brassPolished, materials.rubyJewel);
+        rootGear.position.set(side * 0.22, 0.08, 0);
+        rootGear.rotation.x = Math.PI / 2;
+        pivotGroup.add(rootGear);
+
+        // 2. Wing Airfoil Contour Curve Points (Local +X * side is spanwise, -Z is trailing edge)
+        const numStations = 18;
+        const leadingPts = [];
+        const midSparPts = [];
+        const trailingPts = [];
+
+        for (let i = 0; i <= numStations; i++) {
+          const t = i / numStations;
+          const x = side * (0.35 + t * (span - 0.35));
+          // Slight arch and sweep
+          const y = Math.sin(t * Math.PI) * 0.12 * (1 - t * 0.5);
+          const zLead = sweep * t * span + Math.sin(t * Math.PI) * 0.18;
+          // Chord profile (wider at base for hindwing, sleek elliptical for forewing)
+          const chordProfile = isForewing
+            ? Math.sin(Math.pow(t, 0.65) * Math.PI) * maxChord
+            : Math.sin(Math.pow(t, 0.48) * Math.PI) * maxChord;
+          const zTrail = zLead - Math.max(0.08, chordProfile);
+          const zMid = zLead - (zLead - zTrail) * 0.38;
+
+          leadingPts.push(new THREE.Vector3(x, y, zLead));
+          midSparPts.push(new THREE.Vector3(x, y * 0.8, zMid));
+          trailingPts.push(new THREE.Vector3(x, y * 0.3, zTrail));
+        }
+
+        // Tubular Leading Edge Spar (Costa)
+        const leadCurve = new THREE.CatmullRomCurve3(leadingPts);
+        const leadGeo = new THREE.TubeGeometry(leadCurve, 28, 0.036, 8, false);
+        const leadMesh = new THREE.Mesh(leadGeo, materials.brassPolished);
+        pivotGroup.add(leadMesh);
+
+        // Median Sub-Spar (Radius/Media vein)
+        const midCurve = new THREE.CatmullRomCurve3(midSparPts);
+        const midGeo = new THREE.TubeGeometry(midCurve, 24, 0.022, 6, false);
+        const midMesh = new THREE.Mesh(midGeo, materials.bluedSteel);
+        pivotGroup.add(midMesh);
+
+        // Delicate Trailing Edge Rim
+        const trailCurve = new THREE.CatmullRomCurve3(trailingPts);
+        const trailGeo = new THREE.TubeGeometry(trailCurve, 28, 0.015, 6, false);
+        const trailMesh = new THREE.Mesh(trailGeo, materials.goldFiligree);
+        pivotGroup.add(trailMesh);
+
+        // Brass Nodus Joint Collar (at ~45% span, a signature anatomical feature of dragonfly wings!)
+        const nodusPt = leadingPts[8];
+        const nodusCollar = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.065, 0.065, 0.18, 10),
+          materials.rubyJewel
+        );
+        nodusCollar.rotation.z = Math.PI / 2;
+        nodusCollar.position.copy(nodusPt);
+        pivotGroup.add(nodusCollar);
+
+        // Golden Pterostigma Counterweight Plate near wingtip (stations 13..15)
+        const pteroPt1 = leadingPts[14];
+        const pteroPt2 = midSparPts[14];
+        const pteroPos = pteroPt1.clone().lerp(pteroPt2, 0.45);
+        const pteroBox = new THREE.Mesh(
+          new THREE.BoxGeometry(0.52, 0.025, 0.14),
+          materials.brassPolished
+        );
+        pteroBox.position.copy(pteroPos);
+        pivotGroup.add(pteroBox);
+
+        // Filigree Cross-Veins & Cellular Reticulation + Translucent Crystal Membrane
+        const membranePositions = [];
+        const veinVertices = [];
+
+        for (let i = 0; i < numStations; i++) {
+          const L0 = leadingPts[i], L1 = leadingPts[i + 1];
+          const M0 = midSparPts[i], M1 = midSparPts[i + 1];
+          const T0 = trailingPts[i], T1 = trailingPts[i + 1];
+
+          // Primary cross-rib tubes from Leading -> Mid -> Trailing
+          if (i > 0 && i < numStations) {
+            const ribCurve1 = new THREE.LineCurve3(L0, M0);
+            const ribMesh1 = new THREE.Mesh(
+              new THREE.TubeGeometry(ribCurve1, 1, 0.012, 5, false),
+              materials.goldFiligree
+            );
+            pivotGroup.add(ribMesh1);
+
+            const ribCurve2 = new THREE.LineCurve3(M0, T0);
+            const ribMesh2 = new THREE.Mesh(
+              new THREE.TubeGeometry(ribCurve2, 1, 0.010, 5, false),
+              materials.goldFiligree
+            );
+            pivotGroup.add(ribMesh2);
+          }
+
+          // Hexagonal/Voronoi-style internal filigree struts inside each bay
+          const cA = L0.clone().add(L1).add(M0).add(M1).multiplyScalar(0.25);
+          const cB = M0.clone().add(M1).add(T0).add(T1).multiplyScalar(0.25);
+          veinVertices.push(
+            L0.x, L0.y, L0.z, cA.x, cA.y, cA.z,
+            L1.x, L1.y, L1.z, cA.x, cA.y, cA.z,
+            M0.x, M0.y, M0.z, cA.x, cA.y, cA.z,
+            M1.x, M1.y, M1.z, cA.x, cA.y, cA.z,
+            M0.x, M0.y, M0.z, cB.x, cB.y, cB.z,
+            M1.x, M1.y, M1.z, cB.x, cB.y, cB.z,
+            T0.x, T0.y, T0.z, cB.x, cB.y, cB.z,
+            T1.x, T1.y, T1.z, cB.x, cB.y, cB.z,
+            cA.x, cA.y, cA.z, cB.x, cB.y, cB.z
+          );
+
+          // Triangles for etched glass wing membrane
+          membranePositions.push(
+            L0.x, L0.y, L0.z, L1.x, L1.y, L1.z, M1.x, M1.y, M1.z,
+            L0.x, L0.y, L0.z, M1.x, M1.y, M1.z, M0.x, M0.y, M0.z,
+            M0.x, M0.y, M0.z, M1.x, M1.y, M1.z, T1.x, T1.y, T1.z,
+            M0.x, M0.y, M0.z, T1.x, T1.y, T1.z, T0.x, T0.y, T0.z
+          );
+        }
+
+        const veinGeo = new THREE.BufferGeometry();
+        veinGeo.setAttribute('position', new THREE.Float32BufferAttribute(veinVertices, 3));
+        const veinLines = new THREE.LineSegments(veinGeo, materials.goldLine);
+        pivotGroup.add(veinLines);
+
+        const memGeo = new THREE.BufferGeometry();
+        memGeo.setAttribute('position', new THREE.Float32BufferAttribute(membranePositions, 3));
+        memGeo.computeVertexNormals();
+        const memMesh = new THREE.Mesh(memGeo, materials.wingMembrane);
+        pivotGroup.add(memMesh);
+
+        return pivotGroup;
+      }
+
+      const foreLeftWingGroup = new THREE.Group();
+      foreLeftWingGroup.position.set(-0.48, 0.56, 1.38);
+      const foreLeftWing = buildMechanicalWing(-1, true);
+      foreLeftWingGroup.add(foreLeftWing);
+      registerSubsystem('forewingL', foreLeftWingGroup, new THREE.Vector3(-2.4, 1.2, 0.8));
+      tagSubsystem(foreLeftWingGroup, 'forewings');
+
+      const foreRightWingGroup = new THREE.Group();
+      foreRightWingGroup.position.set(0.48, 0.56, 1.38);
+      const foreRightWing = buildMechanicalWing(1, true);
+      foreRightWingGroup.add(foreRightWing);
+      registerSubsystem('forewingR', foreRightWingGroup, new THREE.Vector3(2.4, 1.2, 0.8));
+      tagSubsystem(foreRightWingGroup, 'forewings');
+
+      const hindLeftWingGroup = new THREE.Group();
+      hindLeftWingGroup.position.set(-0.48, 0.52, 0.22);
+      const hindLeftWing = buildMechanicalWing(-1, false);
+      hindLeftWingGroup.add(hindLeftWing);
+      registerSubsystem('hindwingL', hindLeftWingGroup, new THREE.Vector3(-2.4, 0.9, -0.8));
+      tagSubsystem(hindLeftWingGroup, 'hindwings');
+
+      const hindRightWingGroup = new THREE.Group();
+      hindRightWingGroup.position.set(0.48, 0.52, 0.22);
+      const hindRightWing = buildMechanicalWing(1, false);
+      hindRightWingGroup.add(hindRightWing);
+      registerSubsystem('hindwingR', hindRightWingGroup, new THREE.Vector3(2.4, 0.9, -0.8));
+      tagSubsystem(hindRightWingGroup, 'hindwings');
+
+      // ------------------------------------------
+      // D. 10-SEGMENT ARTICULATED ABDOMEN / TAIL (SYS-05)
+      // ------------------------------------------
+      const abdomenGroup = new THREE.Group();
+      abdomenGroup.position.set(0, 0.14, -0.55);
+      registerSubsystem('abdomen', abdomenGroup, new THREE.Vector3(0, 0.1, -2.5));
+
+      const tailSegments = [];
+      const numTailSegments = 10;
+
+      for (let i = 0; i < numTailSegments; i++) {
+        const segGroup = new THREE.Group();
+        const segLen = 0.64;
+        // Slight swelling at segment 2 and 8 (classic dragonfly anatomy)
+        const radiusProfile = (i === 1) ? 0.34 : (i === 8 ? 0.26 : 0.30 * (1 - i * 0.045));
+        segGroup.position.set(0, 0, -i * segLen);
+        segGroup.userData.baseZ = -i * segLen;
+        segGroup.userData.index = i;
+
+        // Outer octagonal brass shell ring
+        const shellGeo = new THREE.CylinderGeometry(
+          radiusProfile * 0.92,
+          radiusProfile,
+          segLen * 0.78,
+          8,
+          1,
+          false
+        );
+        shellGeo.rotateX(Math.PI / 2);
+        const shell = new THREE.Mesh(
+          shellGeo,
+          i % 2 === 0 ? materials.brassPolished : materials.bluedSteel
+        );
+        shell.position.z = -segLen * 0.4;
+        segGroup.add(shell);
+
+        // Brass collar bands at front & back of segment
+        const band = new THREE.Mesh(
+          new THREE.TorusGeometry(radiusProfile * 1.02, 0.025, 10, 18),
+          materials.goldFiligree
+        );
+        band.position.z = -segLen * 0.12;
+        segGroup.add(band);
+
+        // Dorsal stabilizer fin on top of each segment
+        const finGeo = new THREE.BoxGeometry(0.03, 0.14, segLen * 0.55);
+        const fin = new THREE.Mesh(finGeo, materials.brassPolished);
+        fin.position.set(0, radiusProfile + 0.05, -segLen * 0.4);
+        segGroup.add(fin);
+
+        // Internal glowing crystal energy core rod + copper gimbal joint
+        const jointSphere = new THREE.Mesh(
+          new THREE.SphereGeometry(radiusProfile * 0.52, 12, 12),
+          materials.copperCoil
+        );
+        jointSphere.position.z = 0;
+        segGroup.add(jointSphere);
+
+        // Terminal Caudal Cerci (Twin Caliper Stabilizer Blades on Segment 9)
+        if (i === numTailSegments - 1) {
+          [-1, 1].forEach((side) => {
+            const cercus = new THREE.Mesh(
+              new THREE.ConeGeometry(0.065, 0.75, 5),
+              materials.brassPolished
+            );
+            cercus.rotation.x = -Math.PI / 2;
+            cercus.rotation.y = side * 0.28;
+            cercus.position.set(side * 0.14, 0.02, -segLen * 0.95);
+            cercus.userData.isCercus = true;
+            cercus.userData.side = side;
+            segGroup.add(cercus);
+          });
+        }
+
+        abdomenGroup.add(segGroup);
+        tailSegments.push(segGroup);
+      }
+
+      tagSubsystem(abdomenGroup, 'abdomen');
+
+      // ------------------------------------------
+      // E. SIX ARTICULATED RAPTORIAL LEGS (SYS-06)
+      // ------------------------------------------
+      const legsGroup = new THREE.Group();
+      legsGroup.position.set(0, -0.25, 0.95);
+      registerSubsystem('legs', legsGroup, new THREE.Vector3(0, -1.8, 0.35));
+
+      const legAssemblies = [];
+      const legConfigs = [
+        { pair: 0, zOff: 0.78, reach: 0.9, spread: 0.55 },
+        { pair: 1, zOff: 0.15, reach: 1.15, spread: 0.75 },
+        { pair: 2, zOff: -0.52, reach: 1.40, spread: 0.92 }
+      ];
+
+      legConfigs.forEach((cfg) => {
+        [-1, 1].forEach((side) => {
+          const legRoot = new THREE.Group();
+          legRoot.position.set(side * 0.36, 0, cfg.zOff);
+
+          // Coxa Shoulder Joint
+          const coxa = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 12), materials.brassPolished);
+          legRoot.add(coxa);
+
+          // Upper Femur Group
+          const femurGroup = new THREE.Group();
+          femurGroup.rotation.z = side * -0.65;
+          femurGroup.rotation.x = 0.25 - cfg.pair * 0.22;
+
+          const femurBar = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.036, 0.028, cfg.reach, 8),
+            materials.bluedSteel
+          );
+          femurBar.position.y = -cfg.reach * 0.5;
+          femurGroup.add(femurBar);
+
+          // Copper damper spring around femur
+          const springCoil = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.052, 0.052, cfg.reach * 0.45, 10),
+            materials.copperCoil
+          );
+          springCoil.position.y = -cfg.reach * 0.45;
+          femurGroup.add(springCoil);
+
+          // Knee Joint
+          const knee = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.09, 10), materials.brassPolished);
+          knee.rotation.x = Math.PI / 2;
+          knee.position.y = -cfg.reach;
+          femurGroup.add(knee);
+
+          // Lower Tibia & Tarsus Claw Group
+          const tibiaGroup = new THREE.Group();
+          tibiaGroup.position.y = -cfg.reach;
+          tibiaGroup.rotation.z = side * 0.95;
+          tibiaGroup.rotation.x = 0.35;
+
+          const tibiaLen = cfg.reach * 1.05;
+          const tibiaBar = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.026, 0.015, tibiaLen, 8),
+            materials.brassPolished
+          );
+          tibiaBar.position.y = -tibiaLen * 0.5;
+          tibiaGroup.add(tibiaBar);
+
+          // Twin mechanical tarsus claws at foot tip
+          [-0.03, 0.03].forEach((clawOff) => {
+            const claw = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.18, 5), materials.bluedSteel);
+            claw.position.set(clawOff, -tibiaLen - 0.06, 0.05);
+            claw.rotation.x = Math.PI * 0.72;
+            tibiaGroup.add(claw);
+          });
+
+          femurGroup.add(tibiaGroup);
+          legRoot.add(femurGroup);
+          legsGroup.add(legRoot);
+
+          legAssemblies.push({
+            root: legRoot,
+            femur: femurGroup,
+            tibia: tibiaGroup,
+            side,
+            pair: cfg.pair
+          });
+        });
+      });
+
+      tagSubsystem(legsGroup, 'legs');
+
+      // ==========================================
+      // 7. BLUEPRINT ASTROLABE RINGS, GRID & LEADER LINES
+      // ==========================================
+      const blueprintEnvGroup = new THREE.Group();
+      scene.add(blueprintEnvGroup);
+
+      // Horizontal calibrated protractor rings on floor
+      const floorGroup = new THREE.Group();
+      floorGroup.position.y = -3.2;
+      blueprintEnvGroup.add(floorGroup);
+
+      [4.5, 7.5, 10.5].forEach((r, idx) => {
+        const ringGeo = new THREE.RingGeometry(r - 0.025, r, 96);
+        ringGeo.rotateX(-Math.PI / 2);
+        const ring = new THREE.Mesh(
+          ringGeo,
+          new THREE.MeshBasicMaterial({
+            color: idx === 1 ? 0xd4af37 : 0x38bdf8,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: idx === 1 ? 0.28 : 0.16
+          })
+        );
+        floorGroup.add(ring);
+      });
+
+      // Radial degree tick marks on the floor protractor
+      const tickVertices = [];
+      for (let deg = 0; deg < 360; deg += 5) {
+        const rad = THREE.MathUtils.degToRad(deg);
+        const rIn = (deg % 30 === 0) ? 6.9 : 7.25;
+        const rOut = 7.5;
+        tickVertices.push(
+          Math.cos(rad) * rIn, 0, Math.sin(rad) * rIn,
+          Math.cos(rad) * rOut, 0, Math.sin(rad) * rOut
+        );
+      }
+      const tickGeo = new THREE.BufferGeometry();
+      tickGeo.setAttribute('position', new THREE.Float32BufferAttribute(tickVertices, 3));
+      const tickLines = new THREE.LineSegments(tickGeo, materials.goldLine);
+      floorGroup.add(tickLines);
+
+      // Shadow-receiving invisible floor plane
+      const shadowPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(40, 40),
+        new THREE.ShadowMaterial({ opacity: 0.28 })
+      );
+      shadowPlane.rotation.x = -Math.PI / 2;
+      shadowPlane.position.y = -3.21;
+      shadowPlane.receiveShadow = true;
+      scene.add(shadowPlane);
+
+      // Dynamic Dashed Engineering Leader Lines (connecting exploded parts to origin)
+      const leaderLineGeo = new THREE.BufferGeometry();
+      const leaderPositions = new Float32Array(7 * 2 * 3); // 7 subsystems * 2 endpoints * xyz
+      leaderLineGeo.setAttribute('position', new THREE.BufferAttribute(leaderPositions, 3));
+      const leaderLines = new THREE.LineSegments(leaderLineGeo, materials.leaderDash);
+      dragonflyRoot.add(leaderLines);
+
+      // Subtle Aerodynamic Airflow Stream Particles
+      const streamCount = 90;
+      const streamGeo = new THREE.BufferGeometry();
+      const streamPositions = new Float32Array(streamCount * 3);
+      for (let i = 0; i < streamCount; i++) {
+        streamPositions[i * 3] = (Math.random() - 0.5) * 14;
+        streamPositions[i * 3 + 1] = (Math.random() - 0.5) * 5;
+        streamPositions[i * 3 + 2] = (Math.random() - 0.5) * 16;
+      }
+      streamGeo.setAttribute('position', new THREE.BufferAttribute(streamPositions, 3));
+      const streamMat = new THREE.PointsMaterial({
+        color: 0xd4af37,
+        size: 0.055,
+        transparent: true,
+        opacity: 0.45
+      });
+      const streamParticles = new THREE.Points(streamGeo, streamMat);
+      scene.add(streamParticles);
+
+      // ==========================================
+      // 8. 3D INTERACTIVE CALLOUT PINS (HTML OVERLAY)
+      // ==========================================
+      const annotationsLayer = document.getElementById('annotations-layer');
+      const calloutDefs = [
+        { key: 'head', num: '01', label: 'COMPOUND OPTICS', anchorObj: headGroup, offset: new THREE.Vector3(0, 0.5, 0.3) },
+        { key: 'thorax', num: '02', label: 'ESCAPEMENT GEARBOX', anchorObj: thoraxGroup, offset: new THREE.Vector3(0, 0.9, 0.1) },
+        { key: 'forewings', num: '03', label: 'FORE FILIGREE WING', anchorObj: foreRightWingGroup, offset: new THREE.Vector3(2.8, 0.25, 0.2) },
+        { key: 'hindwings', num: '04', label: 'HIND COUNTER-WING', anchorObj: hindLeftWingGroup, offset: new THREE.Vector3(-2.6, 0.2, -0.2) },
+        { key: 'abdomen', num: '05', label: '10-SEG TAIL STABILIZER', anchorObj: abdomenGroup, offset: new THREE.Vector3(0, 0.45, -3.2) },
+        { key: 'legs', num: '06', label: 'RAPTORIAL LANDING GEAR', anchorObj: legsGroup, offset: new THREE.Vector3(0.65, -0.9, 0.2) }
+      ];
+
+      const calloutElements = calloutDefs.map((def) => {
+        const el = document.createElement('div');
+        el.className = 'callout-pin flex items-center gap-2 group';
+        el.innerHTML = `
+          <div class="callout-dot"></div>
+          <div class="hud-panel px-2 py-0.5 rounded-sm font-mono-tech text-[10px] tracking-wider whitespace-nowrap opacity-85 group-hover:opacity-100 transition-opacity" style="color: var(--text-main);">
+            <span style="color: var(--accent-gold);">${def.num}</span> ${def.label}
+          </div>
+        `;
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectSubsystem(def.key);
+        });
+        annotationsLayer.appendChild(el);
+        return { def, el };
+      });
+
+      // ==========================================
+      // 9. WEB AUDIO API MECHANICAL CLOCKWORK SYNTH
+      // ==========================================
+      let audioCtx = null;
+      let lastTickTime = 0;
+
+      function initAudioIfNeeded() {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+          }
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      }
+
+      function playClockworkTick(isAccent) {
+        if (!state.soundEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        const now = audioCtx.currentTime;
+        // Metallic escapement click
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = isAccent ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(isAccent ? 1950 : 1420, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.025);
+
+        gain.gain.setValueAtTime(isAccent ? 0.045 : 0.022, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.028);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.03);
+      }
+
+      // ==========================================
+      // 10. UI CONTROLS & EVENT HANDLERS
+      // ==========================================
+      function selectSubsystem(key) {
+        state.selectedPart = key;
+        const info = SUBSYSTEM_INFO[key] || SUBSYSTEM_INFO.all;
+        document.getElementById('part-code').textContent = info.code;
+        document.getElementById('part-title').textContent = info.title;
+        document.getElementById('part-desc').textContent = info.desc;
+        document.getElementById('part-material').textContent = info.material;
+
+        const resetBtn = document.getElementById('btn-reset-focus');
+        if (key && key !== 'all' && info.camOffset) {
+          resetBtn.classList.remove('hidden');
+          camTargetSpherical.theta = info.camOffset.theta;
+          camTargetSpherical.phi = info.camOffset.phi;
+          camTargetSpherical.radius = info.camOffset.radius;
+          camTargetSpherical.target.copy(info.targetPos);
+        } else {
+          resetBtn.classList.add('hidden');
+          camTargetSpherical.target.set(0, 0.1, -0.4);
+          camTargetSpherical.radius = 15.5;
+        }
+      }
+
+      document.getElementById('btn-reset-focus').addEventListener('click', () => {
+        selectSubsystem('all');
+      });
+
+      // Flight toggle
+      const btnFlight = document.getElementById('btn-flight');
+      const statusBadge = document.getElementById('status-badge');
+      const flightDot = document.getElementById('flight-dot');
+      const flightBtnText = document.getElementById('flight-btn-text');
+
+      btnFlight.addEventListener('click', () => {
+        state.inFlight = !state.inFlight;
+        btnFlight.classList.toggle('active', state.inFlight);
+        if (state.inFlight) {
+          flightBtnText.textContent = 'TAKE FLIGHT';
+          statusBadge.textContent = state.surgeMode ? 'SURGE OVERDRIVE' : 'FLIGHT ACTIVE';
+          flightDot.classList.add('animate-ping');
+        } else {
+          flightBtnText.textContent = 'IDLE (TICK)';
+          statusBadge.textContent = 'HOROLOGICAL IDLE';
+          flightDot.classList.remove('animate-ping');
+        }
+        updateTelemetryDisplay();
+      });
+
+      // Surge / Hover Overdrive button
+      const btnHoverMode = document.getElementById('btn-hover-mode');
+      btnHoverMode.addEventListener('click', () => {
+        state.surgeMode = !state.surgeMode;
+        btnHoverMode.classList.toggle('active', state.surgeMode);
+        if (!state.inFlight && state.surgeMode) {
+          state.inFlight = true;
+          btnFlight.classList.add('active');
+          flightBtnText.textContent = 'TAKE FLIGHT';
+          flightDot.classList.add('animate-ping');
+        }
+        statusBadge.textContent = state.surgeMode ? 'SURGE OVERDRIVE' : 'FLIGHT ACTIVE';
+        updateTelemetryDisplay();
+      });
+
+      // Exploded View Slider & Quick Buttons
+      const sliderExplode = document.getElementById('slider-explode');
+      const explodePct = document.getElementById('explode-pct');
+
+      function setExplodeTarget(val) {
+        state.targetExplode = val / 100;
+        sliderExplode.value = val;
+        explodePct.textContent = `${Math.round(val)}%`;
+      }
+
+      sliderExplode.addEventListener('input', (e) => {
+        setExplodeTarget(parseFloat(e.target.value));
+      });
+      document.getElementById('btn-assembled').addEventListener('click', () => setExplodeTarget(0));
+      document.getElementById('btn-exploded').addEventListener('click', () => setExplodeTarget(100));
+
+      // Tempo Slider
+      const sliderTempo = document.getElementById('slider-tempo');
+      const tempoVal = document.getElementById('tempo-val');
+      sliderTempo.addEventListener('input', (e) => {
+        state.tempo = parseFloat(e.target.value) / 100;
+        tempoVal.textContent = `${state.tempo.toFixed(1)}x`;
+        updateTelemetryDisplay();
+      });
+
+      // Fore/Hind Wing Phase Offset Slider
+      const sliderPhase = document.getElementById('slider-phase');
+      const labelPhaseSlider = document.getElementById('label-phase-slider');
+      sliderPhase.addEventListener('input', (e) => {
+        state.phaseOffsetDeg = parseFloat(e.target.value);
+        labelPhaseSlider.textContent = `${Math.round(state.phaseOffsetDeg)}°`;
+        updateTelemetryDisplay();
+      });
+
+      function updateTelemetryDisplay() {
+        const baseFreq = state.inFlight ? (state.surgeMode ? 38.0 : 28.0) : 2.0;
+        const freq = baseFreq * state.tempo;
+        const rpm = Math.round(freq * 60);
+        const stroke = state.inFlight ? (state.surgeMode ? 132 : 116) : 14;
+        document.getElementById('metric-freq').textContent = `${freq.toFixed(1)} Hz`;
+        document.getElementById('metric-rpm').textContent = `${rpm.toLocaleString()} RPM`;
+        document.getElementById('metric-stroke').textContent = `${stroke}°`;
+        document.getElementById('metric-phase').textContent = `${state.phaseOffsetDeg.toFixed(0)}°`;
+      }
+
+      // Camera Preset Buttons
+      const camPresets = {
+        'cam-iso': { theta: 0.68, phi: 1.10, radius: 15.5 },
+        'cam-plan': { theta: 0.0, phi: 0.08, radius: 17.5 },
+        'cam-front': { theta: 0.0, phi: 1.48, radius: 13.5 },
+        'cam-profile': { theta: Math.PI / 2, phi: 1.48, radius: 15.5 }
+      };
+
+      Object.keys(camPresets).forEach((btnId) => {
+        document.getElementById(btnId).addEventListener('click', () => {
+          Object.keys(camPresets).forEach((id) => document.getElementById(id).classList.remove('active'));
+          document.getElementById(btnId).classList.add('active');
+          const p = camPresets[btnId];
+          camTargetSpherical.theta = p.theta;
+          camTargetSpherical.phi = p.phi;
+          camTargetSpherical.radius = p.radius;
+          camTargetSpherical.target.set(0, 0.1, -0.4);
+        });
+      });
+
+      // Orbit & 4-Views toggles
+      const btnOrbit = document.getElementById('btn-orbit');
+      btnOrbit.addEventListener('click', () => {
+        state.autoOrbit = !state.autoOrbit;
+        btnOrbit.classList.toggle('active', state.autoOrbit);
+      });
+
+      const btnQuadView = document.getElementById('btn-quad-view');
+      const quadOverlay = document.getElementById('quad-overlay');
+      btnQuadView.addEventListener('click', () => {
+        state.quadView = !state.quadView;
+        btnQuadView.classList.toggle('active', state.quadView);
+        quadOverlay.classList.toggle('hidden', !state.quadView);
+        annotationsLayer.classList.toggle('hidden', state.quadView || !state.showAnnotations);
+      });
+
+      // Annotations toggle
+      const btnAnnotations = document.getElementById('btn-annotations');
+      btnAnnotations.addEventListener('click', () => {
+        state.showAnnotations = !state.showAnnotations;
+        btnAnnotations.classList.toggle('active', state.showAnnotations);
+        btnAnnotations.querySelector('span:last-child').textContent = state.showAnnotations ? 'CALLOUTS: ON' : 'CALLOUTS: OFF';
+        annotationsLayer.classList.toggle('hidden', state.quadView || !state.showAnnotations);
+      });
+
+      // Sound toggle
+      const btnSound = document.getElementById('btn-sound');
+      const soundIndicator = document.getElementById('sound-indicator');
+      const soundLabel = document.getElementById('sound-label');
+      btnSound.addEventListener('click', () => {
+        initAudioIfNeeded();
+        state.soundEnabled = !state.soundEnabled;
+        btnSound.classList.toggle('active', state.soundEnabled);
+        soundLabel.textContent = state.soundEnabled ? 'AUDIO: ON' : 'AUDIO: OFF';
+        soundIndicator.style.background = state.soundEnabled ? 'var(--accent-gold)' : '#64748b';
+      });
+
+      // Theme Switcher
+      const themes = {
+        'theme-azure': {
+          name: 'azure',
+          bodyClass: '',
+          bluedColor: 0x1d3b5c,
+          crystalColor: 0x38bdf8,
+          brassColor: 0xd9a74a
+        },
+        'theme-obsidian': {
+          name: 'obsidian',
+          bodyClass: 'theme-obsidian',
+          bluedColor: 0x1c1917,
+          crystalColor: 0xf43f5e,
+          brassColor: 0xe5a96d
+        },
+        'theme-parchment': {
+          name: 'parchment',
+          bodyClass: 'theme-parchment',
+          bluedColor: 0x3e3124,
+          crystalColor: 0x1d6fa5,
+          brassColor: 0x9c652b
+        }
+      };
+
+      Object.keys(themes).forEach((tId) => {
+        document.getElementById(tId).addEventListener('click', () => {
+          Object.keys(themes).forEach((id) => document.getElementById(id).classList.remove('active'));
+          document.getElementById(tId).classList.add('active');
+          const cfg = themes[tId];
+          state.theme = cfg.name;
+          document.body.className = `blueprint-grid ${cfg.bodyClass}`.trim();
+          materials.bluedSteel.color.setHex(cfg.bluedColor);
+          materials.crystalLens.color.setHex(cfg.crystalColor);
+          materials.brassPolished.color.setHex(cfg.brassColor);
+          coreGlowLight.color.setHex(cfg.crystalColor);
+          scene.environment = buildStudioEnvMap(cfg.name);
+        });
+      });
+
+      // ==========================================
+      // 10B. AUTO DEMO SHOWREEL & VIDEO RECORDER
+      // ==========================================
+      const btnAutoDemo = document.getElementById('btn-auto-demo');
+      const demoBtnLabel = document.getElementById('demo-btn-label');
+      const demoBanner = document.getElementById('demo-banner');
+      const demoActLabel = document.getElementById('demo-act-label');
+      const demoTimeLabel = document.getElementById('demo-time-label');
+      const demoProgressBar = document.getElementById('demo-progress-bar');
+
+      const btnRecVideo = document.getElementById('btn-rec-video');
+      const recBtnLabel = document.getElementById('rec-btn-label');
+      const recToast = document.getElementById('rec-toast');
+      const recToastText = document.getElementById('rec-toast-text');
+
+      function applyThemeById(tId) {
+        Object.keys(themes).forEach((id) => document.getElementById(id).classList.remove('active'));
+        document.getElementById(tId).classList.add('active');
+        const cfg = themes[tId];
+        state.theme = cfg.name;
+        document.body.className = `blueprint-grid ${cfg.bodyClass}`.trim();
+        materials.bluedSteel.color.setHex(cfg.bluedColor);
+        materials.crystalLens.color.setHex(cfg.crystalColor);
+        materials.brassPolished.color.setHex(cfg.brassColor);
+        coreGlowLight.color.setHex(cfg.crystalColor);
+        scene.environment = buildStudioEnvMap(cfg.name);
+      }
+
+      function startAutoDemo() {
+        state.demoActive = true;
+        state.demoElapsed = 0;
+        btnAutoDemo.classList.add('active');
+        demoBtnLabel.textContent = 'STOP DEMO';
+        demoBanner.classList.remove('hidden');
+        state.inFlight = true;
+        btnFlight.classList.add('active');
+        flightBtnText.textContent = 'TAKE FLIGHT';
+        flightDot.classList.add('animate-ping');
+        selectSubsystem('all');
+      }
+
+      function stopAutoDemo() {
+        state.demoActive = false;
+        btnAutoDemo.classList.remove('active');
+        demoBtnLabel.textContent = 'AUTO DEMO';
+        demoBanner.classList.add('hidden');
+        state.quadView = false;
+        btnQuadView.classList.remove('active');
+        quadOverlay.classList.add('hidden');
+        annotationsLayer.classList.toggle('hidden', !state.showAnnotations);
+      }
+
+      btnAutoDemo.addEventListener('click', () => {
+        if (state.demoActive) stopAutoDemo();
+        else startAutoDemo();
+      });
+
+      function updateDirectorDemo(dt) {
+        if (!state.demoActive) return;
+        state.demoElapsed += dt;
+        if (state.demoElapsed >= state.demoDuration) {
+          if (state.isRecording) {
+            stopVideoRecording();
+            stopAutoDemo();
+            return;
+          }
+          state.demoElapsed = 0; // loop showreel
+        }
+
+        const t = state.demoElapsed;
+        const pct = Math.min(100, (t / state.demoDuration) * 100);
+        demoProgressBar.style.width = `${pct.toFixed(1)}%`;
+        demoTimeLabel.textContent = `${t.toFixed(1)}s / ${state.demoDuration.toFixed(1)}s`;
+
+        if (t < 4.5) {
+          // ACT I: Hero Isometric Orbit
+          demoActLabel.textContent = 'ACT I // ISOMETRIC HOROLOGICAL STUDY';
+          setExplodeTarget(0);
+          state.surgeMode = false;
+          btnHoverMode.classList.remove('active');
+          state.quadView = false;
+          btnQuadView.classList.remove('active');
+          quadOverlay.classList.add('hidden');
+          camTargetSpherical.theta = 0.65 + t * 0.25;
+          camTargetSpherical.phi = 1.08;
+          camTargetSpherical.radius = 14.8;
+          camTargetSpherical.target.set(0, 0.1, -0.3);
+        } else if (t < 10.5) {
+          // ACT II: Exploded Mechanical Disassembly & Escapement Zoom
+          demoActLabel.textContent = 'ACT II // EXPLODED DIFFERENTIAL GEARBOX';
+          const expProgress = Math.min(1, (t - 4.5) / 2.5);
+          setExplodeTarget(Math.round(expProgress * 100));
+          camTargetSpherical.theta = 1.75 + (t - 4.5) * 0.22;
+          camTargetSpherical.phi = 1.02;
+          camTargetSpherical.radius = 11.2;
+          camTargetSpherical.target.set(0, 0.25, 0.4);
+        } else if (t < 15.5) {
+          // ACT III: Reassembly & High-Frequency Counter-Phase Surge Flight
+          demoActLabel.textContent = 'ACT III // 38Hz COUNTER-PHASE SURGE FLIGHT';
+          const reassemble = Math.max(0, 1 - (t - 10.5) / 1.8);
+          setExplodeTarget(Math.round(reassemble * 100));
+          state.surgeMode = true;
+          btnHoverMode.classList.add('active');
+          updateTelemetryDisplay();
+          camTargetSpherical.theta = -0.55 + (t - 10.5) * 0.28;
+          camTargetSpherical.phi = 1.25;
+          camTargetSpherical.radius = 12.8;
+          camTargetSpherical.target.set(0, 0.15, 0.2);
+        } else if (t < 20.0) {
+          // ACT IV: 4-VIEWS Engineering Blueprint Split
+          demoActLabel.textContent = 'ACT IV // QUAD-VIEWPORT CAD BLUEPRINT';
+          setExplodeTarget(35);
+          if (!state.quadView) {
+            state.quadView = true;
+            btnQuadView.classList.add('active');
+            quadOverlay.classList.remove('hidden');
+            annotationsLayer.classList.add('hidden');
+          }
+          camTargetSpherical.theta = 0.78 + (t - 15.5) * 0.3;
+          camTargetSpherical.phi = 1.10;
+          camTargetSpherical.radius = 15.0;
+        } else {
+          // ACT V: Obsidian Finish & Hero Finale
+          demoActLabel.textContent = 'ACT V // OBSIDIAN & GOLD HERO FINALE';
+          if (state.quadView) {
+            state.quadView = false;
+            btnQuadView.classList.remove('active');
+            quadOverlay.classList.add('hidden');
+            annotationsLayer.classList.toggle('hidden', !state.showAnnotations);
+          }
+          if (t < 22.2 && state.theme !== 'obsidian') {
+            applyThemeById('theme-obsidian');
+          } else if (t >= 22.2 && state.theme !== 'azure') {
+            applyThemeById('theme-azure');
+          }
+          setExplodeTarget(0);
+          state.surgeMode = false;
+          btnHoverMode.classList.remove('active');
+          updateTelemetryDisplay();
+          camTargetSpherical.theta = 0.68 + (t - 20.0) * 0.2;
+          camTargetSpherical.phi = 1.12;
+          camTargetSpherical.radius = 15.2;
+          camTargetSpherical.target.set(0, 0.1, -0.4);
+        }
+      }
+
+      // Composite Canvas Video Recorder (captures 3D WebGL + HUD blueprint overlay)
+      const recCanvas = document.createElement('canvas');
+      const recCtx = recCanvas.getContext('2d');
+      let mediaRecorder = null;
+      let recordedChunks = [];
+
+      function drawCompositeFrame() {
+        if (!state.isRecording) return;
+        const w = renderer.domElement.width;
+        const h = renderer.domElement.height;
+        if (recCanvas.width !== w || recCanvas.height !== h) {
+          recCanvas.width = w;
+          recCanvas.height = h;
+        }
+        // 1. Draw WebGL 3D Canvas
+        recCtx.drawImage(renderer.domElement, 0, 0, w, h);
+
+        // 2. Draw Engineering Blueprint HUD Overlay onto Recorded Video Frame
+        const scale = Math.min(w / 1280, h / 720);
+        const pad = Math.round(24 * scale);
+
+        // Top-Left Title Box
+        recCtx.save();
+        recCtx.fillStyle = state.theme === 'parchment' ? 'rgba(242, 233, 216, 0.86)' : 'rgba(10, 20, 38, 0.80)';
+        recCtx.strokeStyle = '#d4af37';
+        recCtx.lineWidth = 1.5;
+        const boxW = Math.round(390 * scale);
+        const boxH = Math.round(86 * scale);
+        recCtx.fillRect(pad, pad, boxW, boxH);
+        recCtx.strokeRect(pad, pad, boxW, boxH);
+
+        recCtx.fillStyle = '#d4af37';
+        recCtx.font = `600 ${Math.round(11 * scale)}px "JetBrains Mono", monospace`;
+        recCtx.fillText('FIG. 09 — ORNITHOPTER ANISOPTERA | SCALE 1:1', pad + 14, pad + Math.round(22 * scale));
+
+        recCtx.fillStyle = state.theme === 'parchment' ? '#292018' : '#f1f5f9';
+        recCtx.font = `italic 600 ${Math.round(26 * scale)}px "Cormorant Garamond", Georgia, serif`;
+        recCtx.fillText('Libellula Mechanica', pad + 14, pad + Math.round(52 * scale));
+
+        recCtx.fillStyle = '#94a3b8';
+        recCtx.font = `400 ${Math.round(10 * scale)}px "JetBrains Mono", monospace`;
+        recCtx.fillText(demoActLabel.textContent || 'QUAD-WING HOROLOGICAL FLYING MACHINE', pad + 14, pad + Math.round(72 * scale));
+
+        // Bottom-Left Telemetry Strip
+        const botY = h - pad - Math.round(44 * scale);
+        const stripW = Math.round(540 * scale);
+        const stripH = Math.round(44 * scale);
+        recCtx.fillStyle = state.theme === 'parchment' ? 'rgba(242, 233, 216, 0.86)' : 'rgba(10, 20, 38, 0.80)';
+        recCtx.fillRect(pad, botY, stripW, stripH);
+        recCtx.strokeRect(pad, botY, stripW, stripH);
+
+        recCtx.fillStyle = '#d4af37';
+        recCtx.font = `500 ${Math.round(11 * scale)}px "JetBrains Mono", monospace`;
+        const expText = `EXPLODED: ${Math.round(state.explodeFactor * 100)}%`;
+        const freqText = `FREQ: ${document.getElementById('metric-freq').textContent}`;
+        const phaseText = `PHASE: ${Math.round(state.phaseOffsetDeg)}°`;
+        const viewText = state.quadView ? 'MODE: 4-VIEW CAD' : 'MODE: 3D PERSPECTIVE';
+        recCtx.fillText(`${expText}   |   ${freqText}   |   ${phaseText}   |   ${viewText}`, pad + 14, botY + Math.round(26 * scale));
+
+        // If 4-VIEWS is active, draw crosshair divider lines on the recorded video
+        if (state.quadView) {
+          recCtx.strokeStyle = 'rgba(212, 175, 55, 0.45)';
+          recCtx.beginPath();
+          recCtx.moveTo(w / 2, 0);
+          recCtx.lineTo(w / 2, h);
+          recCtx.moveTo(0, h / 2);
+          recCtx.lineTo(w, h / 2);
+          recCtx.stroke();
+        }
+        recCtx.restore();
+      }
+
+      function startVideoRecording() {
+        if (state.isRecording) return;
+        try {
+          const w = renderer.domElement.width;
+          const h = renderer.domElement.height;
+          recCanvas.width = w;
+          recCanvas.height = h;
+
+          const stream = recCanvas.captureStream(60);
+          const mimeTypes = [
+            'video/webm;codecs=vp9',
+            'video/webm;codecs=vp8',
+            'video/webm',
+            'video/mp4'
+          ];
+          let selectedMime = '';
+          for (const m of mimeTypes) {
+            if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) {
+              selectedMime = m;
+              break;
+            }
+          }
+
+          recordedChunks = [];
+          mediaRecorder = selectedMime
+            ? new MediaRecorder(stream, { mimeType: selectedMime, videoBitsPerSecond: 8000000 })
+            : new MediaRecorder(stream);
+
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: selectedMime || 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const ext = (selectedMime && selectedMime.includes('mp4')) ? 'mp4' : 'webm';
+            a.href = url;
+            a.download = `libellula_mechanica_demo.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+            recToastText.textContent = 'VIDEO EXPORTED: libellula_mechanica_demo.' + ext;
+            setTimeout(() => {
+              recToast.classList.add('hidden');
+            }, 3500);
+          };
+
+          state.isRecording = true;
+          mediaRecorder.start(100);
+          btnRecVideo.classList.add('active');
+          recBtnLabel.textContent = 'STOP & SAVE';
+          recToast.classList.remove('hidden');
+          recToastText.textContent = 'RECORDING DEMO SHOWREEL (CLICK STOP TO SAVE EARLY)...';
+
+          if (!state.demoActive) {
+            startAutoDemo();
+          }
+        } catch (err) {
+          recToast.classList.remove('hidden');
+          recToastText.textContent = 'BROWSER RECORDING UNAVAILABLE IN THIS CONTEXT';
+          setTimeout(() => recToast.classList.add('hidden'), 3000);
+        }
+      }
+
+      function stopVideoRecording() {
+        if (!state.isRecording) return;
+        state.isRecording = false;
+        btnRecVideo.classList.remove('active');
+        recBtnLabel.textContent = 'REC VIDEO';
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+      }
+
+      btnRecVideo.addEventListener('click', () => {
+        if (state.isRecording) stopVideoRecording();
+        else startVideoRecording();
+      });
+
+      // ==========================================
+      // 11. POINTER ORBIT, ZOOM & 3D RAYCASTING
+      // ==========================================
+      let isDragging = false;
+      let dragMoved = false;
+      let prevPointer = { x: 0, y: 0 };
+      const raycaster = new THREE.Raycaster();
+      const pointerNDC = new THREE.Vector2();
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        dragMoved = false;
+        prevPointer.x = e.clientX;
+        prevPointer.y = e.clientY;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+
+        camTargetSpherical.theta -= dx * 0.0065;
+        camTargetSpherical.phi = Math.max(0.08, Math.min(Math.PI - 0.12, camTargetSpherical.phi - dy * 0.0065));
+        prevPointer.x = e.clientX;
+        prevPointer.y = e.clientY;
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (isDragging && !dragMoved && e.target === renderer.domElement) {
+          // Raycast click on 3D dragonfly part
+          pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+          pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+          raycaster.setFromCamera(pointerNDC, mainCamera);
+          const hits = raycaster.intersectObjects(interactableMeshes, false);
+          if (hits.length > 0 && hits[0].object.userData.subsystem) {
+            selectSubsystem(hits[0].object.userData.subsystem);
+          }
+        }
+        isDragging = false;
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camTargetSpherical.radius = Math.max(5.5, Math.min(28.0, camTargetSpherical.radius + e.deltaY * 0.01));
+      }, { passive: false });
+
+      window.addEventListener('resize', () => {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        mainCamera.aspect = window.innerWidth / window.innerHeight;
+        mainCamera.updateProjectionMatrix();
+      });
+
+      // ==========================================
+      // 12. REAL-TIME KINEMATICS & RENDER LOOP
+      // ==========================================
+      const clock = new THREE.Clock();
+      const tempVec = new THREE.Vector3();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const dt = Math.min(clock.getDelta(), 0.05);
+
+        // 0. Update Director Auto-Demo Timeline if active
+        updateDirectorDemo(dt);
+
+        // 1. Smoothly interpolate Explode Factor
+        state.explodeFactor += (state.targetExplode - state.explodeFactor) * Math.min(1, dt * 8);
+
+        // Apply exploded offsets to all registered subsystems + update dashed leader lines
+        const subsystemKeys = Object.keys(subsystems);
+        const lPosAttr = leaderLines.geometry.attributes.position;
+
+        subsystemKeys.forEach((key, idx) => {
+          const grp = subsystems[key];
+          const base = grp.userData.basePos;
+          const exp = grp.userData.explodeVec;
+          grp.position.set(
+            base.x + exp.x * state.explodeFactor,
+            base.y + exp.y * state.explodeFactor,
+            base.z + exp.z * state.explodeFactor
+          );
+
+          // Update leader line segment from base to current exploded position
+          lPosAttr.setXYZ(idx * 2, base.x, base.y, base.z);
+          lPosAttr.setXYZ(idx * 2 + 1, grp.position.x, grp.position.y, grp.position.z);
+        });
+        lPosAttr.needsUpdate = true;
+        leaderLines.computeLineDistances();
+        materials.leaderDash.opacity = state.explodeFactor * 0.65;
+
+        // Also telescope the 10 tail segments apart during Exploded View
+        tailSegments.forEach((seg, i) => {
+          seg.position.z = seg.userData.baseZ * (1 + state.explodeFactor * 0.65);
+        });
+
+        // 2. Advance Simulation Clock
+        const speedMult = (state.inFlight ? (state.surgeMode ? 18.0 : 12.5) : 1.4) * state.tempo;
+        state.simTime += dt * speedMult;
+        const t = state.simTime;
+
+        // Trigger horological audio clicks synchronized with cycle phase
+        const tickInterval = state.inFlight ? Math.PI : Math.PI * 0.5;
+        if (t - lastTickTime >= tickInterval) {
+          lastTickTime = t;
+          playClockworkTick(Math.floor(t / tickInterval) % 2 === 0);
+        }
+
+        // 3. Quad-Wing Counter-Phase Flapping & Figure-8 Feathering Kinematics
+        const phaseRad = THREE.MathUtils.degToRad(state.phaseOffsetDeg);
+        const flapAmp = state.inFlight ? (state.surgeMode ? 0.68 : 0.56) : 0.06;
+        const featherAmp = state.inFlight ? 0.28 : 0.03;
+
+        const foreStroke = Math.sin(t);
+        const forePitch = Math.cos(t) * featherAmp;
+        const hindStroke = Math.sin(t - phaseRad);
+        const hindPitch = Math.cos(t - phaseRad) * featherAmp;
+
+        // Forewings
+        foreLeftWing.rotation.z = -foreStroke * flapAmp - 0.08;
+        foreLeftWing.rotation.x = forePitch;
+        foreRightWing.rotation.z = foreStroke * flapAmp + 0.08;
+        foreRightWing.rotation.x = forePitch;
+
+        // Hindwings
+        hindLeftWing.rotation.z = -hindStroke * flapAmp + 0.05;
+        hindLeftWing.rotation.x = hindPitch;
+        hindRightWing.rotation.z = hindStroke * flapAmp - 0.05;
+        hindRightWing.rotation.x = hindPitch;
+
+        // 4. Thorax Internal Gears & Reciprocating Piston Rods
+        animatedGears.forEach((g) => {
+          if (g.oscillate) {
+            g.mesh.rotation[g.axis] = Math.sin(t * 2.0) * 0.85;
+          } else {
+            g.mesh.rotation[g.axis] = t * g.ratio;
+          }
+        });
+
+        pistonRods.forEach((p) => {
+          const stroke = p.isFore ? foreStroke : hindStroke;
+          p.group.position.y = 0.32 + stroke * 0.16;
+        });
+
+        // 5. Biomechanical Traveling Wave along 10-Segment Abdomen + Whole-Body Hover Bob
+        const hoverBob = state.inFlight ? Math.sin(t) * -0.12 : Math.sin(t * 0.5) * 0.02;
+        const bodyPitch = state.inFlight ? (state.surgeMode ? -0.14 : -0.05) + Math.cos(t) * 0.03 : 0;
+        dragonflyRoot.position.y = hoverBob;
+        dragonflyRoot.rotation.x = bodyPitch;
+
+        tailSegments.forEach((seg, i) => {
+          const waveAmp = state.inFlight ? 0.055 : 0.012;
+          seg.position.y = Math.sin(t - i * 0.42) * waveAmp * (i * 0.35);
+          seg.rotation.x = Math.cos(t - i * 0.42) * waveAmp * 0.8;
+
+          // Open/close terminal tail calipers
+          if (i === numTailSegments - 1) {
+            seg.children.forEach((ch) => {
+              if (ch.userData.isCercus) {
+                ch.rotation.y = ch.userData.side * (0.22 + (state.inFlight ? 0.16 : 0.02) + Math.sin(t) * 0.06);
+              }
+            });
+          }
+        });
+
+        // 6. Head Gimbal Counter-Stabilization & Leg Folding Posture
+        headGroup.rotation.x = -bodyPitch * 0.85 + Math.sin(t * 0.5) * 0.04;
+        headGroup.rotation.y = Math.sin(t * 0.27) * 0.08;
+
+        legAssemblies.forEach((leg) => {
+          const foldFactor = state.inFlight ? 1.0 : 0.0;
+          const targetFemurZ = leg.side * (-0.65 + foldFactor * 0.28);
+          const targetTibiaZ = leg.side * (0.95 + foldFactor * 0.42) + Math.sin(t + leg.pair) * 0.03 * leg.side;
+          leg.femur.rotation.z += (targetFemurZ - leg.femur.rotation.z) * 0.1;
+          leg.tibia.rotation.z += (targetTibiaZ - leg.tibia.rotation.z) * 0.1;
+        });
+
+        // 7. Rotate Blueprint Floor Protractor & Stream Particles
+        tickLines.rotation.y += dt * 0.06;
+        const sAttr = streamParticles.geometry.attributes.position;
+        const flowSpeed = state.inFlight ? (state.surgeMode ? 11.0 : 6.0) * state.tempo : 0.4;
+        for (let i = 0; i < streamCount; i++) {
+          let z = sAttr.getZ(i) - dt * flowSpeed;
+          if (z < -8) z = 8;
+          sAttr.setZ(i, z);
+        }
+        sAttr.needsUpdate = true;
+
+        // 8. Update Camera Spherical Orbit & Smooth Damping
+        if (state.autoOrbit && !isDragging) {
+          camTargetSpherical.theta += dt * 0.32;
+        }
+        camSpherical.radius += (camTargetSpherical.radius - camSpherical.radius) * 0.08;
+        camSpherical.theta += (camTargetSpherical.theta - camSpherical.theta) * 0.08;
+        camSpherical.phi += (camTargetSpherical.phi - camSpherical.phi) * 0.08;
+        camSpherical.target.lerp(camTargetSpherical.target, 0.08);
+
+        const sinPhi = Math.sin(camSpherical.phi);
+        mainCamera.position.set(
+          camSpherical.target.x + camSpherical.radius * sinPhi * Math.sin(camSpherical.theta),
+          camSpherical.target.y + camSpherical.radius * Math.cos(camSpherical.phi),
+          camSpherical.target.z + camSpherical.radius * sinPhi * Math.cos(camSpherical.theta)
+        );
+        mainCamera.lookAt(camSpherical.target);
+
+        // 9. Render Single View or Quad-Viewport Engineering Blueprint Mode
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+
+        if (!state.quadView) {
+          renderer.setScissorTest(false);
+          renderer.setViewport(0, 0, w, h);
+          renderer.render(scene, mainCamera);
+
+          // Update 2D screen positions of 3D callout pins
+          if (state.showAnnotations) {
+            calloutElements.forEach(({ def, el }) => {
+              def.anchorObj.getWorldPosition(tempVec);
+              tempVec.add(def.offset);
+              tempVec.project(mainCamera);
+              if (tempVec.z > 1) {
+                el.style.opacity = '0';
+              } else {
+                const sx = (tempVec.x * 0.5 + 0.5) * w;
+                const sy = (-tempVec.y * 0.5 + 0.5) * h;
+                el.style.left = `${sx}px`;
+                el.style.top = `${sy}px`;
+                el.style.opacity = '1';
+              }
+            });
+          }
+        } else {
+          // 4-VIEWS Multi-Viewport CAD Split
+          renderer.setScissorTest(true);
+          const halfW = Math.floor(w / 2);
+          const halfH = Math.floor(h / 2);
+          const subAspect = halfW / halfH;
+
+          // Top-Left: ISO Perspective
+          mainCamera.aspect = subAspect;
+          mainCamera.updateProjectionMatrix();
+          renderer.setViewport(0, halfH, halfW, halfH);
+          renderer.setScissor(0, halfH, halfW, halfH);
+          renderer.render(scene, mainCamera);
+
+          // Top-Right: Dorsal Plan (Top View)
+          topCamera.aspect = subAspect;
+          topCamera.updateProjectionMatrix();
+          topCamera.position.set(0, 18.5, -0.5);
+          topCamera.lookAt(0, 0, -0.5);
+          renderer.setViewport(halfW, halfH, w - halfW, halfH);
+          renderer.setScissor(halfW, halfH, w - halfW, halfH);
+          renderer.render(scene, topCamera);
+
+          // Bottom-Left: Anterior Front View
+          frontCamera.aspect = subAspect;
+          frontCamera.updateProjectionMatrix();
+          frontCamera.position.set(0, 0.4, 14.5);
+          frontCamera.lookAt(0, 0.1, 0);
+          renderer.setViewport(0, 0, halfW, halfH);
+          renderer.setScissor(0, 0, halfW, halfH);
+          renderer.render(scene, frontCamera);
+
+          // Bottom-Right: Lateral Profile View
+          sideCamera.aspect = subAspect;
+          sideCamera.updateProjectionMatrix();
+          sideCamera.position.set(16.5, 0.3, -0.5);
+          sideCamera.lookAt(0, 0.1, -0.5);
+          renderer.setViewport(halfW, 0, w - halfW, halfH);
+          renderer.setScissor(halfW, 0, w - halfW, halfH);
+          renderer.render(scene, sideCamera);
+
+          mainCamera.aspect = w / h;
+          mainCamera.updateProjectionMatrix();
+        }
+
+        // 10. Capture composite frame if recording video
+        if (state.isRecording) {
+          drawCompositeFrame();
+        }
+      }
+
+      animate();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,2626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FIG. 15 — PAVO PRISMATICA | 2D-to-3D Holographic Cloisonné Peacock</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Import Map for Latest Three.js r186 (v0.186.1) ES Module + Addons -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #050914;
+      --bg-panel: rgba(8, 15, 32, 0.80);
+      --border-line: rgba(56, 189, 248, 0.35);
+      --border-subtle: rgba(148, 163, 184, 0.18);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-gold: #fbbf24;
+      --accent-cyan: #22d3ee;
+      --accent-emerald: #10b981;
+      --accent-violet: #a855f7;
+      --accent-rose: #f43f5e;
+      --grid-color: rgba(34, 211, 238, 0.08);
+    }
+    body.theme-neon {
+      --bg-primary: #090414;
+      --bg-panel: rgba(19, 9, 35, 0.82);
+      --border-line: rgba(232, 121, 249, 0.40);
+      --border-subtle: rgba(168, 85, 247, 0.20);
+      --text-main: #fdf4ff;
+      --text-muted: #d8b4fe;
+      --accent-gold: #f43f5e;
+      --accent-cyan: #22d3ee;
+      --grid-color: rgba(232, 121, 249, 0.09);
+    }
+    body.theme-cloisonne {
+      --bg-primary: #041311;
+      --bg-panel: rgba(6, 26, 23, 0.84);
+      --border-line: rgba(245, 158, 11, 0.42);
+      --border-subtle: rgba(16, 185, 129, 0.22);
+      --text-main: #ecfdf5;
+      --text-muted: #6ee7b7;
+      --accent-gold: #f59e0b;
+      --accent-cyan: #10b981;
+      --grid-color: rgba(16, 185, 129, 0.08);
+    }
+    body.theme-phoenix {
+      --bg-primary: #130707;
+      --bg-panel: rgba(31, 12, 12, 0.84);
+      --border-line: rgba(251, 191, 36, 0.42);
+      --border-subtle: rgba(244, 63, 94, 0.22);
+      --text-main: #fff1f2;
+      --text-muted: #fda4af;
+      --accent-gold: #fbbf24;
+      --accent-cyan: #fb7185;
+      --grid-color: rgba(251, 146, 60, 0.08);
+    }
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      transition: background-color 0.45s ease, color 0.35s ease;
+    }
+    .font-serif-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .blueprint-grid {
+      background-image:
+        linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+      background-size: 36px 36px;
+    }
+    .hud-panel {
+      background: var(--bg-panel);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-line);
+      transition: all 0.3s ease;
+    }
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .hud-btn:hover {
+      border-color: var(--accent-cyan);
+      color: var(--text-main);
+      background: rgba(34, 211, 238, 0.14);
+    }
+    .hud-btn.active {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.24), rgba(168, 85, 247, 0.24));
+      border-color: var(--accent-cyan);
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(34, 211, 238, 0.25);
+    }
+    .hud-btn.active-gold {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.28), rgba(244, 63, 94, 0.22));
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+      box-shadow: 0 0 14px rgba(251, 191, 36, 0.28);
+    }
+    input[type="range"].mech-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      background: linear-gradient(90deg, #06b6d4, #a855f7, #f43f5e, #fbbf24);
+      border-radius: 3px;
+      outline: none;
+      opacity: 0.88;
+    }
+    input[type="range"].mech-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid var(--accent-cyan);
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.9);
+      transition: transform 0.15s ease;
+    }
+    input[type="range"].mech-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.22);
+    }
+    .callout-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .callout-pin.active-pin {
+      transform: translate(-50%, -50%) scale(1.16);
+      z-index: 30;
+    }
+    .callout-pin.active-pin .pin-tag {
+      border-color: #fbbf24 !important;
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.32), rgba(244, 63, 94, 0.30)) !important;
+      box-shadow: 0 0 18px rgba(251, 191, 36, 0.55);
+      opacity: 1 !important;
+    }
+    .callout-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid #050914;
+      position: relative;
+    }
+    .callout-dot::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 1.5px solid currentColor;
+      opacity: 0.65;
+      animation: pulseRing 2.0s infinite;
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.8); opacity: 0.85; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    .corner-bracket {
+      position: relative;
+    }
+    .corner-bracket::before,
+    .corner-bracket::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      pointer-events: none;
+    }
+    .corner-bracket::before {
+      top: -1px;
+      left: -1px;
+      border-top: 2px solid var(--accent-cyan);
+      border-left: 2px solid var(--accent-cyan);
+    }
+    .corner-bracket::after {
+      bottom: -1px;
+      right: -1px;
+      border-bottom: 2px solid var(--accent-gold);
+      border-right: 2px solid var(--accent-gold);
+    }
+    .part-pill {
+      font-size: 9.5px;
+      padding: 2px 6px;
+      border-radius: 2px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(15, 23, 42, 0.65);
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+    .part-pill:hover {
+      border-color: var(--accent-cyan);
+      color: #fff;
+    }
+    .part-pill.active {
+      border-color: var(--accent-gold);
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.30), rgba(168, 85, 247, 0.30));
+      color: #fff;
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
+    }
+  </style>
+</head>
+<body class="blueprint-grid">
+  <!-- WebGL Canvas Container -->
+  <div id="canvas-container" class="fixed inset-0 w-full h-full z-0"></div>
+
+  <!-- 4-View Split Overlay Lines & Labels -->
+  <div id="quad-overlay" class="fixed inset-0 pointer-events-none z-10 hidden">
+    <div class="absolute inset-y-0 left-1/2 w-px" style="background: var(--border-line);"></div>
+    <div class="absolute inset-x-0 top-1/2 h-px" style="background: var(--border-line);"></div>
+    <div class="absolute top-20 left-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-cyan);">VIEW 01 // 3D PRISM PERSPECTIVE</div>
+    <div class="absolute top-20 left-1/2 ml-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-gold);">VIEW 02 // 2D DORSAL MANDALA</div>
+    <div class="absolute top-1/2 mt-3 left-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-emerald);">VIEW 03 // ANTERIOR TRAIN FAN</div>
+    <div class="absolute top-1/2 mt-3 left-1/2 ml-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-violet);">VIEW 04 // LATERAL KINEMATIC PROFILE</div>
+  </div>
+
+  <!-- 3D Dynamic Annotation Layer (12 Pins!) -->
+  <div id="annotations-layer" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+  <!-- Director Auto-Demo Banner & Recording Toast -->
+  <div id="demo-banner" class="fixed top-20 left-1/2 -translate-x-1/2 z-30 pointer-events-none hidden">
+    <div class="hud-panel corner-bracket px-4 py-2 rounded-sm flex flex-col items-center gap-1.5 min-w-[300px] sm:min-w-[420px]">
+      <div class="w-full flex items-center justify-between font-mono-tech text-[10px] tracking-widest uppercase">
+        <span id="demo-act-label" style="color: var(--accent-cyan);">ACT I // 2D BLUEPRINT TO 3D ASCENSION</span>
+        <span id="demo-time-label" style="color: var(--accent-gold);">00.0s / 48.0s</span>
+      </div>
+      <div class="w-full h-1.5 bg-slate-900/90 rounded overflow-hidden">
+        <div id="demo-progress-bar" class="h-full transition-all duration-100" style="width: 0%; background: linear-gradient(90deg, #06b6d4, #a855f7, #f43f5e, #fbbf24);"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rec-toast" class="fixed top-36 left-1/2 -translate-x-1/2 z-30 pointer-events-none hidden">
+    <div class="hud-panel px-3.5 py-1.5 rounded-sm font-mono-tech text-[11px] flex items-center gap-2 border" style="border-color: var(--accent-gold); color: var(--text-main);">
+      <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+      <span id="rec-toast-text">RECORDING 60FPS WEBGL STREAM...</span>
+    </div>
+  </div>
+
+  <!-- Cover Studio Floating Modal (Hidden by default, opens on click) -->
+  <div id="cover-modal" class="fixed right-3 sm:right-5 top-24 z-30 w-72 sm:w-80 hud-panel corner-bracket p-3.5 rounded-sm pointer-events-auto hidden">
+    <div class="flex items-center justify-between border-b pb-1.5 mb-2.5" style="border-color: var(--border-subtle);">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="font-mono-tech text-[10px] tracking-wider uppercase" style="color: var(--accent-gold);">COVER STUDIO // 4:3 &amp; 3:4 封面直出</span>
+      </div>
+      <button id="btn-close-cover-modal" class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded hover:bg-white/10" style="color: var(--text-muted);">✕</button>
+    </div>
+    <p id="cover-status-msg" class="text-[11px] mb-2.5 leading-snug" style="color: var(--text-main);">
+      已为您渲染并触发下载高清封面！也可点击下方按钮直接保存：
+    </p>
+    <div class="grid grid-cols-2 gap-2.5 items-start">
+      <div class="flex flex-col gap-1.5">
+        <div class="relative rounded overflow-hidden border bg-slate-950/80 aspect-[4/3] flex items-center justify-center" style="border-color: var(--border-line);">
+          <img id="preview-img-4x3" alt="4:3 横版封面预览" class="w-full h-full object-cover hidden" />
+          <span id="placeholder-4x3" class="font-mono-tech text-[9px]" style="color: var(--text-muted);">4:3 准备就绪</span>
+        </div>
+        <a id="dl-link-4x3" download="peacock_cover_4x3.png" href="#download-4x3" class="hud-btn active font-mono-tech text-[10px] py-1.5 px-2 rounded-sm text-center block">
+          ⬇ 保存横封面 (4:3)
+        </a>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <div class="relative rounded overflow-hidden border bg-slate-950/80 aspect-[3/4] flex items-center justify-center" style="border-color: var(--border-line);">
+          <img id="preview-img-3x4" alt="3:4 竖版封面预览" class="w-full h-full object-cover hidden" />
+          <span id="placeholder-3x4" class="font-mono-tech text-[9px]" style="color: var(--text-muted);">3:4 准备就绪</span>
+        </div>
+        <a id="dl-link-3x4" download="peacock_cover_3x4.png" href="#download-3x4" class="hud-btn active font-mono-tech text-[10px] py-1.5 px-2 rounded-sm text-center block">
+          ⬇ 保存竖封面 (3:4)
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Engineering Header Bar -->
+  <header class="fixed top-0 inset-x-0 z-20 p-2.5 sm:p-4 flex flex-wrap items-start justify-between gap-2.5 pointer-events-none">
+    <div class="hud-panel corner-bracket px-3.5 py-2.5 rounded-sm pointer-events-auto max-w-md">
+      <div class="flex items-center gap-2 font-mono-tech text-[10px] tracking-[0.18em] uppercase" style="color: var(--accent-cyan);">
+        <span>FIG. 15 — 2D⇄3D DIMENSIONAL AUTOMATON</span>
+        <span class="opacity-40">|</span>
+        <span style="color: var(--accent-gold);">12 SUBSYSTEMS</span>
+      </div>
+      <div class="flex items-baseline gap-2.5 mt-0.5">
+        <h1 class="font-serif-title italic text-xl sm:text-2xl font-semibold tracking-wide bg-gradient-to-r from-cyan-300 via-fuchsia-300 to-amber-300 bg-clip-text text-transparent">
+          Pavo Prismatica · 琉璃幻彩机械孔雀
+        </h1>
+        <span class="font-mono-tech text-[9px] px-1.5 py-0.5 rounded border" style="border-color: var(--border-line); color: var(--accent-gold);">2D→3D MORPH</span>
+      </div>
+      <p class="font-mono-tech text-[9.5px] tracking-wider uppercase mt-0.5" style="color: var(--text-muted);">
+        CLOISONNÉ ENAMEL · FIBER-OPTIC OCELLI · GYRO ARMILLARY SPHERE · ORIGAMI WINGS
+      </p>
+    </div>
+
+    <!-- Top Right Spectrum Palettes & Action Buttons -->
+    <div class="flex flex-wrap items-center gap-1.5 pointer-events-auto">
+      <div class="hud-panel px-2 py-1 rounded-sm flex items-center gap-1">
+        <span class="font-mono-tech text-[9px] tracking-wider uppercase mr-1" style="color: var(--text-muted);">SPECTRUM:</span>
+        <button id="theme-prism" class="hud-btn active font-mono-tech text-[9.5px] px-2 py-1 rounded-sm" title="幻彩极光琉璃七色主题">PRISM</button>
+        <button id="theme-neon" class="hud-btn font-mono-tech text-[9.5px] px-2 py-1 rounded-sm" title="赛博霓虹紫青电弧主题">CYBER NEON</button>
+        <button id="theme-cloisonne" class="hud-btn font-mono-tech text-[9.5px] px-2 py-1 rounded-sm" title="故宫掐丝珐琅翠金主题">CLOISONNÉ</button>
+        <button id="theme-phoenix" class="hud-btn font-mono-tech text-[9.5px] px-2 py-1 rounded-sm" title="日曜赤金流火主题">PHOENIX</button>
+      </div>
+
+      <button id="btn-annotations" class="hud-panel hud-btn active font-mono-tech text-[9.5px] px-2.5 py-1.5 rounded-sm flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+        <span>12 PINS: ON</span>
+      </button>
+
+      <button id="btn-sound" class="hud-panel hud-btn font-mono-tech text-[9.5px] px-2.5 py-1.5 rounded-sm flex items-center gap-1.5">
+        <span id="sound-indicator" class="w-2 h-2 rounded-full bg-slate-500"></span>
+        <span id="sound-label">AUDIO: OFF</span>
+      </button>
+
+      <button id="btn-auto-demo" class="hud-panel hud-btn font-mono-tech text-[9.5px] px-2.5 py-1.5 rounded-sm flex items-center gap-1.5" title="开启48秒全特性大片运镜：2D升维3D + 孔雀开屏 + 01-12全部位深度巡检 + 爆炸拆解 + 4色光谱切换 + 四视图蓝图">
+        <span class="w-2 h-2 rounded-full bg-fuchsia-400 animate-ping"></span>
+        <span id="demo-btn-label">AUTO DEMO</span>
+      </button>
+
+      <button id="btn-rec-video" class="hud-panel hud-btn font-mono-tech text-[9.5px] px-2.5 py-1.5 rounded-sm flex items-center gap-1.5" title="录制48秒全特性高清演示视频并自动下载">
+        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+        <span id="rec-btn-label">REC VIDEO</span>
+      </button>
+
+      <button id="btn-cover-4x3" class="hud-panel hud-btn active-gold font-mono-tech text-[9.5px] px-2.5 py-1.5 rounded-sm flex items-center gap-1" title="生成并直接下载 4:3 横封面">
+        <span>⬇ 横封面 4:3</span>
+      </button>
+
+      <button id="btn-cover-3x4" class="hud-panel hud-btn active-gold font-mono-tech text-[9.5px] px-2.5 py-1.5 rounded-sm flex items-center gap-1" title="生成并直接下载 3:4 竖封面">
+        <span>⬇ 竖封面 3:4</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry, 12-Part Quick Matrix & Inspector Panel -->
+  <aside class="fixed left-2.5 sm:left-4 top-28 sm:top-32 z-20 w-60 sm:w-72 flex flex-col gap-2 pointer-events-none max-h-[calc(100vh-190px)] overflow-y-auto pr-1">
+    <!-- Live Telemetry Readout -->
+    <div class="hud-panel corner-bracket p-3 rounded-sm pointer-events-auto">
+      <div class="flex items-center justify-between border-b pb-1 mb-2" style="border-color: var(--border-subtle);">
+        <span class="font-mono-tech text-[9.5px] tracking-[0.15em] uppercase" style="color: var(--accent-cyan);">DIMENSIONAL TELEMETRY</span>
+        <span id="status-badge" class="font-mono-tech text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20" style="color: var(--accent-cyan);">3D BLOOMING</span>
+      </div>
+      <div class="grid grid-cols-3 gap-y-1.5 gap-x-2 font-mono-tech text-xs">
+        <div>
+          <div class="text-[8.5px] uppercase" style="color: var(--text-muted);">DIMENSION</div>
+          <div id="metric-dim" class="font-semibold text-xs" style="color: var(--accent-cyan);">3D (100%)</div>
+        </div>
+        <div>
+          <div class="text-[8.5px] uppercase" style="color: var(--text-muted);">TRAIN FAN (开屏)</div>
+          <div id="metric-fan" class="font-semibold text-xs" style="color: var(--accent-gold);">100% (180°)</div>
+        </div>
+        <div>
+          <div class="text-[8.5px] uppercase" style="color: var(--text-muted);">EXPLODED</div>
+          <div id="metric-exp" class="font-semibold text-xs">0%</div>
+        </div>
+        <div>
+          <div class="text-[8.5px] uppercase" style="color: var(--text-muted);">PLASMA CORE</div>
+          <div id="metric-rpm" class="font-semibold text-xs" style="color: var(--accent-emerald);">3,420 RPM</div>
+        </div>
+        <div>
+          <div class="text-[8.5px] uppercase" style="color: var(--text-muted);">OCELLI (眼斑)</div>
+          <div class="font-semibold text-xs" style="color: var(--accent-violet);">19 PRISMS</div>
+        </div>
+        <div>
+          <div class="text-[8.5px] uppercase" style="color: var(--text-muted);">SUBSYSTEMS</div>
+          <div class="font-semibold text-xs" style="color: var(--accent-rose);">12 UNITS</div>
+        </div>
+      </div>
+
+      <!-- 12-Part Quick Selector Matrix -->
+      <div class="mt-2.5 pt-2 border-t" style="border-color: var(--border-subtle);">
+        <div class="flex items-center justify-between font-mono-tech text-[9px] mb-1.5">
+          <span style="color: var(--text-muted);">12-SUBSYSTEM MATRIX (点击切换部位 01-12):</span>
+          <button id="btn-reset-focus" class="underline text-[9px] hidden" style="color: var(--accent-gold);">全机总览 (ALL)</button>
+        </div>
+        <div id="part-matrix-grid" class="grid grid-cols-4 gap-1 font-mono-tech"></div>
+      </div>
+    </div>
+
+    <!-- Selected Subsystem Inspector Card (#inspector-card) -->
+    <div id="inspector-card" class="hud-panel corner-bracket p-3 rounded-sm pointer-events-auto">
+      <div class="flex items-center justify-between mb-0.5">
+        <span id="part-code" class="font-mono-tech text-[9.5px] tracking-widest uppercase" style="color: var(--accent-gold);">SYS-00 // 2D⇄3D PAVO PRISMATICA</span>
+        <span id="part-badge" class="font-mono-tech text-[8.5px] px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300">12-PART ARRAY</span>
+      </div>
+      <h2 id="part-title" class="font-serif-title italic text-base sm:text-lg font-semibold leading-tight">琉璃幻彩·2D转3D全息机械孔雀总成</h2>
+      <p id="part-desc" class="text-[11px] leading-relaxed mt-1" style="color: var(--text-muted);">
+        突破传统单一齿轮结构，融合「2D平面蓝图⇄3D立体升维」折纸几何、三轴浑天仪等离子核心、磁悬浮光环颈椎与19羽七彩掐丝珐琅孔雀开屏阵列。点击 01–12 任一部位可特写巡检。
+      </p>
+      <div class="mt-2 pt-1.5 border-t flex items-center justify-between font-mono-tech text-[9.5px]" style="border-color: var(--border-subtle); color: var(--text-muted);">
+        <span>TECH: <strong id="part-material" class="font-normal" style="color: var(--text-main);"> Dichroic Glass, Cloisonné Gold &amp; Mag-Lev</strong></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Central Engineering Control Dock -->
+  <footer class="fixed bottom-0 inset-x-0 z-20 p-2.5 sm:p-4 flex flex-col xl:flex-row items-stretch xl:items-end justify-between gap-2.5 pointer-events-none">
+    <!-- Left/Center: 2D<->3D Morph, Fan Openness & Exploded Sliders -->
+    <div class="hud-panel corner-bracket p-3 rounded-sm pointer-events-auto flex-1 max-w-4xl grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
+      <!-- Mode Action Buttons -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-2d-3d" class="hud-btn active-gold font-mono-tech text-[10.5px] font-medium px-3 py-2 rounded-sm flex-1 text-center whitespace-nowrap" title="一键切换 2D 平面图腾与 3D 立体升维展开">
+          2D ⇄ 3D 升维
+        </button>
+        <button id="btn-fan-toggle" class="hud-btn active font-mono-tech text-[10.5px] px-3 py-2 rounded-sm flex-1 text-center whitespace-nowrap" title="一键孔雀开屏 / 收拢尾屏">
+          孔雀开屏
+        </button>
+      </div>
+
+      <!-- Slider 1: 2D Blueprint <-> 3D Pop-up Ascension -->
+      <div class="flex flex-col justify-center">
+        <div class="flex items-center justify-between font-mono-tech text-[9.5px] tracking-wider mb-1">
+          <button id="btn-2d-flat" class="hover:underline cursor-pointer" style="color: var(--accent-cyan);">2D 平面蓝图</button>
+          <span id="dim-pct" class="px-1 rounded text-[9.5px]" style="color: var(--accent-gold);">100% 3D</span>
+          <button id="btn-3d-pop" class="hover:underline cursor-pointer" style="color: var(--text-main);">3D 立体升维</button>
+        </div>
+        <input id="slider-dim" type="range" min="0" max="100" value="100" class="mech-slider" />
+      </div>
+
+      <!-- Slider 2: Peacock Train Fan Blooming (0 deg folded <-> 180 deg full bloom) -->
+      <div class="flex flex-col justify-center">
+        <div class="flex items-center justify-between font-mono-tech text-[9.5px] tracking-wider mb-1">
+          <span style="color: var(--text-muted);">尾屏开合 (FAN)</span>
+          <span id="fan-pct" style="color: var(--accent-emerald);">100% (满屏)</span>
+        </div>
+        <input id="slider-fan" type="range" min="0" max="100" value="100" class="mech-slider" />
+      </div>
+
+      <!-- Slider 3: 12-Subsystem Exploded View -->
+      <div class="flex flex-col justify-center">
+        <div class="flex items-center justify-between font-mono-tech text-[9.5px] tracking-wider mb-1">
+          <button id="btn-assembled" class="hover:underline cursor-pointer" style="color: var(--text-muted);">组装</button>
+          <span id="explode-pct" style="color: var(--accent-violet);">0%</span>
+          <button id="btn-exploded" class="hover:underline cursor-pointer" style="color: var(--accent-gold);">12部爆炸拆解</button>
+        </div>
+        <input id="slider-explode" type="range" min="0" max="100" value="0" class="mech-slider" />
+      </div>
+    </div>
+
+    <!-- Right: Camera Angles & Multi-Viewport Dock -->
+    <div class="hud-panel corner-bracket p-2.5 rounded-sm pointer-events-auto flex flex-wrap items-center gap-1.5">
+      <span class="font-mono-tech text-[9.5px] tracking-wider uppercase mr-1" style="color: var(--text-muted);">VIEW:</span>
+      <button id="cam-iso" class="hud-btn active font-mono-tech text-[9.5px] px-2 py-1.5 rounded-sm">ISO</button>
+      <button id="cam-front" class="hud-btn font-mono-tech text-[9.5px] px-2 py-1.5 rounded-sm">2D/FRONT</button>
+      <button id="cam-plan" class="hud-btn font-mono-tech text-[9.5px] px-2 py-1.5 rounded-sm">TOP</button>
+      <button id="cam-profile" class="hud-btn font-mono-tech text-[9.5px] px-2 py-1.5 rounded-sm">SIDE</button>
+      <div class="h-4 w-px mx-0.5" style="background: var(--border-subtle);"></div>
+      <button id="btn-orbit" class="hud-btn font-mono-tech text-[9.5px] px-2 py-1.5 rounded-sm">ORBIT</button>
+      <button id="btn-quad-view" class="hud-btn font-mono-tech text-[9.5px] px-2 py-1.5 rounded-sm">1-4 VIEWS</button>
+    </div>
+  </footer>
+
+  <script>
+    (async function () {
+      if (!window.THREE || parseInt(window.THREE.REVISION || '0', 10) < 180) {
+        try {
+          const latestThree = await import('https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js')
+            .catch(() => import('https://unpkg.com/three@0.186.1/build/three.module.min.js'));
+          if (latestThree && latestThree.WebGLRenderer) {
+            window.THREE = latestThree;
+          }
+        } catch (err) {
+          await new Promise((resolve) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+            s.onload = resolve;
+            s.onerror = resolve;
+            document.head.appendChild(s);
+          });
+        }
+      }
+      const THREE = window.THREE;
+      // ==========================================
+      // 1. STATE & 12 SUBSYSTEMS METADATA
+      // ==========================================
+      const state = {
+        dimFactor: 1.0,       // 0.0 = 2D Flat Blueprint Mandala, 1.0 = 3D Pop-up Volume
+        targetDim: 1.0,
+        fanFactor: 1.0,       // 0.0 = Folded Train, 1.0 = 180-deg Full Peacock Bloom
+        targetFan: 1.0,
+        explodeFactor: 0.0,   // 0.0 = Assembled, 1.0 = 12-Subsystem Exploded View
+        targetExplode: 0.0,
+        tempo: 1.0,
+        autoOrbit: false,
+        quadView: false,
+        showAnnotations: true,
+        soundEnabled: false,
+        theme: 'prism',
+        selectedPart: 'all',
+        simTime: 0,
+        demoActive: false,
+        demoElapsed: 0,
+        demoDuration: 48.0,
+        isRecording: false,
+        scanWaveY: -999
+      };
+
+      const SUBSYSTEM_INFO = {
+        all: {
+          code: 'SYS-00 // 2D⇄3D PAVO PRISMATICA',
+          badge: '12-PART ARRAY',
+          title: '琉璃幻彩·2D转3D全息机械孔雀总成',
+          desc: '突破传统单一齿轮结构，融合「2D平面蓝图⇄3D立体升维」折纸几何、三轴浑天仪等离子核心、磁悬浮光环颈椎与19羽七彩掐丝珐琅孔雀开屏阵列。点击 01–12 任一部位可特写巡检。',
+          material: 'Dichroic Glass, Cloisonné Gold & Mag-Lev'
+        },
+        s01_crest: {
+          num: '01',
+          short: '01 光纤羽冠',
+          code: 'SYS-01 // FIBER-OPTIC CORONA CREST',
+          badge: 'OPTIC CROWN',
+          title: '九翎光纤导光琉璃羽冠',
+          desc: '头顶呈扇形排列 9 根弧形黄金导光纤维天线，顶端悬浮水滴形青金石与紫水晶谐振棱镜。在 2D 态下化为平面放射王冠图腾，升维 3D 后呈立体弧形冠冕并高频脉冲闪烁。',
+          material: ' Quartz Fiber, Lapis Lazuli & 24K Gold',
+          color: '#22d3ee',
+          camOffset: { theta: 0.32, phi: 1.15, radius: 7.5 },
+          targetPos: new THREE.Vector3(0, 2.75, 1.95)
+        },
+        s02_cranium: {
+          num: '02',
+          short: '02 棱镜颅首',
+          code: 'SYS-02 // PRISMATIC OPTIC CRANIUM',
+          badge: 'SENSOR HEAD',
+          title: '多面体宝石复眼颅首与声波喙',
+          desc: '采用流线型钛金切面几何颅骨，两侧镶嵌祖母绿与洋红双色变焦光学镜头，前部为可开合白金鸣叫声波谐振喙，内置微缩激光测距核心。',
+          material: 'Titanium Alloy, Emerald & Ruby Lens',
+          color: '#f43f5e',
+          camOffset: { theta: 0.55, phi: 1.22, radius: 7.2 },
+          targetPos: new THREE.Vector3(0, 2.15, 2.05)
+        },
+        s03_neck: {
+          num: '03',
+          short: '03 磁浮颈环',
+          code: 'SYS-03 // MAG-LEV CERVICAL RINGS',
+          badge: 'MAG-LEV NECK',
+          title: '十节无接触磁悬浮霓虹颈环与螺旋光缆',
+          desc: '完全摒弃传统齿轮啮合，由 10 枚悬浮于 S 型双螺旋等离子光缆外的超导磁环构成。每枚磁环随相位波依次切换青、紫、金三色呼吸光效。',
+          material: 'Superconducting Coils & Neon Plasma Tube',
+          color: '#a855f7',
+          camOffset: { theta: 0.68, phi: 1.24, radius: 8.0 },
+          targetPos: new THREE.Vector3(0, 1.25, 1.55)
+        },
+        s04_core: {
+          num: '04',
+          short: '04 浑天仪核',
+          code: 'SYS-04 // GYROSCOPIC ARMILLARY CORE',
+          badge: 'PLASMA REACTOR',
+          title: '三轴正交浑天仪陀螺与二十面体星核',
+          desc: '胸腔中央镂空悬浮三层正交旋转的镀金浑天仪刻度环（Armillary Sphere），中心锁定一颗高速自转的虹彩二十面体量子星核，提供全身反重力与开屏动力。',
+          material: ' Dichroic Crystal & Gyroscopic Brass Rings',
+          color: '#fbbf24',
+          camOffset: { theta: 0.45, phi: 1.20, radius: 8.2 },
+          targetPos: new THREE.Vector3(0, 0.25, 0.95)
+        },
+        s05_breast: {
+          num: '05',
+          short: '05 莲瓣胸甲',
+          code: 'SYS-05 // CLOISONNÉ LOTUS CARAPACE',
+          badge: 'ENAMEL ARMOR',
+          title: '八瓣掐丝珐琅孔雀蓝呼吸胸甲',
+          desc: '环绕胸腔的 8 片仿生莲花瓣形掐丝珐琅装甲板，融合孔雀蓝、翡翠绿与鎏金掐丝纹样，随浑天仪核心脉动进行微幅呼吸式开合。',
+          material: 'Cloisonné Enamel, Jade & Filigree Gold',
+          color: '#10b981',
+          camOffset: { theta: 0.78, phi: 1.28, radius: 8.6 },
+          targetPos: new THREE.Vector3(0, 0.15, 1.35)
+        },
+        s06_wings: {
+          num: '06',
+          short: '06 折纸光翼',
+          code: 'SYS-06 // KINETIC ORIGAMI WINGS',
+          badge: 'ORIGAMI BLADES',
+          title: '双联十二羽折纸渐变琉璃光翼',
+          desc: '左右两侧各由 12 片三角形与菱形半透明虹彩琉璃薄片按折纸（Origami）铰链拼接。在 2D 态下平铺如几何剪纸，升维 3D 后沿折痕立体展开并高频掠动。',
+          material: 'Iridescent Dichroic Acrylic & Gold Hinges',
+          color: '#06b6d4',
+          camOffset: { theta: 0.95, phi: 1.18, radius: 10.5 },
+          targetPos: new THREE.Vector3(1.6, 0.35, 0.45)
+        },
+        s07_actuator: {
+          num: '07',
+          short: '07 开屏枢轴',
+          code: 'SYS-07 // PNEUMATIC FAN ACTUATOR',
+          badge: 'BLOOM DRIVE',
+          title: '十九路环形气动滑轨与行星开屏枢轴盘',
+          desc: '背部后方搭载双层行星太阳轮与 19 根放射状紫铜/钛金微型液压推杆，可将整座孔雀尾屏从 0° 束拢态平滑推展至 180° 满月盛开态。',
+          material: 'Copper Pneumatic Pistons & Sun-Planet Gear',
+          color: '#f97316',
+          camOffset: { theta: 0.35, phi: 1.05, radius: 9.5 },
+          targetPos: new THREE.Vector3(0, 0.35, -0.45)
+        },
+        s08_inner_fan: {
+          num: '08',
+          short: '08 珐琅内屏',
+          code: 'SYS-08 // CLOISONNÉ INNER PLUMES',
+          badge: 'INNER 9-PLUME',
+          title: '九翎掐丝珐琅翡翠内层羽屏',
+          desc: '尾屏前排 9 根精细镂空花丝羽翎，采用翡翠绿与帝王金双色几何网格结构，在 2D 态下构成精密曼陀罗内环，3D 态下向前拱起形成立体景深。',
+          material: 'Emerald Enamel & Laser-Cut Brass Filigree',
+          color: '#10b981',
+          camOffset: { theta: 0.25, phi: 1.12, radius: 12.2 },
+          targetPos: new THREE.Vector3(0, 1.35, -0.85)
+        },
+        s09_outer_fan: {
+          num: '09',
+          short: '09 全息主屏',
+          code: 'SYS-09 // HOLOGRAPHIC MAIN TRAIN',
+          badge: 'OUTER 10-PLUME',
+          title: '十翎全息虹彩导光主尾屏阵列',
+          desc: '外圈 10 根巨型主尾羽，每根由鎏金羽轴、双色渐变分光翼膜与几何光栅构成，实时演算彩虹相位波，呈现出流光溢彩的孔雀开屏盛景。',
+          material: 'Prismatic Grating Film & Gold Rachis Spars',
+          color: '#a855f7',
+          camOffset: { theta: 0.18, phi: 1.15, radius: 14.8 },
+          targetPos: new THREE.Vector3(0, 2.1, -1.1)
+        },
+        s10_ocelli: {
+          num: '10',
+          short: '10 悬浮眼斑',
+          code: 'SYS-10 // FLOATING PRISM OCELLI',
+          badge: '19 EYE GEMS',
+          title: '十九眼悬浮八面体棱镜「孔雀眼斑」',
+          desc: '每根尾羽顶端均悬浮一枚独立自转的 3D 八面体宝石眼斑（Ocellus），外围环绕三圈金青紫同心光环。在 2D→3D 升维时，平面圆环会立体拉出成多面体棱镜！',
+          material: 'Octahedral Amethyst, Sapphire & Ruby Gems',
+          color: '#ec4899',
+          camOffset: { theta: -0.22, phi: 1.08, radius: 13.5 },
+          targetPos: new THREE.Vector3(-1.8, 2.6, -1.0)
+        },
+        s11_tesla: {
+          num: '11',
+          short: '11 电弧谐振',
+          code: 'SYS-11 // TWIN TESLA ARC RESONATORS',
+          badge: 'ENERGY COILS',
+          title: '左右双联特斯拉电弧谐振浮游炮',
+          desc: '悬浮于身体两侧的紫铜螺旋电磁谐振器与多层电容环，与尾屏眼斑产生无线能量共鸣，在周身激发出动态旋转的星尘离子流。',
+          material: 'Wound Copper Coils & Plasma Capacitor Rings',
+          color: '#38bdf8',
+          camOffset: { theta: -0.65, phi: 1.20, radius: 10.2 },
+          targetPos: new THREE.Vector3(-1.9, 0.85, 0.2)
+        },
+        s12_talons: {
+          num: '12',
+          short: '12 星盘禽足',
+          code: 'SYS-12 // TALONS & 2D⇄3D ASTROLABE',
+          badge: 'BASE MANDALA',
+          title: '仿生钛金三趾禽足与全息升维星盘底座',
+          desc: '纤巧有力的双足通过精密连杆抓握于底部三层同心旋转的全息曼陀罗星盘之上。切换 2D 态时，底座星盘自动翻转90°与主视图平行，化作巨幅背景工程阵图。',
+          material: ' Polished Titanium Talons & Holographic Rings',
+          color: '#fbbf24',
+          camOffset: { theta: 0.48, phi: 1.42, radius: 10.8 },
+          targetPos: new THREE.Vector3(0, -1.45, 0.2)
+        }
+      };
+
+      const PART_KEYS = [
+        's01_crest', 's02_cranium', 's03_neck', 's04_core',
+        's05_breast', 's06_wings', 's07_actuator', 's08_inner_fan',
+        's09_outer_fan', 's10_ocelli', 's11_tesla', 's12_talons'
+      ];
+
+      // Build 12-part matrix buttons in left sidebar
+      const matrixGrid = document.getElementById('part-matrix-grid');
+      const matrixButtons = {};
+      PART_KEYS.forEach((key) => {
+        const info = SUBSYSTEM_INFO[key];
+        const btn = document.createElement('button');
+        btn.className = 'part-pill';
+        btn.textContent = info.short;
+        btn.addEventListener('click', () => selectSubsystem(key));
+        matrixGrid.appendChild(btn);
+        matrixButtons[key] = btn;
+      });
+
+      // ==========================================
+      // 2. THREE.JS SCENE, RENDERER & CAMERAS
+      // ==========================================
+      const container = document.getElementById('canvas-container');
+      const scene = new THREE.Scene();
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: 'high-performance',
+        preserveDrawingBuffer: true
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.28;
+      container.appendChild(renderer.domElement);
+
+      const mainCamera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 200);
+      const topCamera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+      const frontCamera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+      const sideCamera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+
+      const camSpherical = {
+        radius: 17.5,
+        theta: 0.42,
+        phi: 1.18,
+        target: new THREE.Vector3(0, 0.85, 0.0)
+      };
+      const camTargetSpherical = {
+        radius: 17.5,
+        theta: 0.42,
+        phi: 1.18,
+        target: new THREE.Vector3(0, 0.85, 0.0)
+      };
+
+      // ==========================================
+      // 3. MULTI-COLOR STUDIO ENVIRONMENT & LIGHTS
+      // ==========================================
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+
+      function buildPrismEnvMap(themeName) {
+        const envScene = new THREE.Scene();
+        const bgMap = {
+          prism: 0x050914,
+          neon: 0x090414,
+          cloisonne: 0x041311,
+          phoenix: 0x130707
+        };
+        envScene.background = new THREE.Color(bgMap[themeName] || 0x050914);
+
+        const stripCyan = new THREE.Mesh(new THREE.BoxGeometry(28, 3, 10), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+        stripCyan.position.set(-16, 16, 10);
+        envScene.add(stripCyan);
+
+        const stripGold = new THREE.Mesh(new THREE.BoxGeometry(28, 10, 3), new THREE.MeshBasicMaterial({ color: 0xfbbf24 }));
+        stripGold.position.set(16, 10, 12);
+        envScene.add(stripGold);
+
+        const stripMagenta = new THREE.Mesh(new THREE.BoxGeometry(3, 14, 28), new THREE.MeshBasicMaterial({ color: 0xf43f5e }));
+        stripMagenta.position.set(-18, 4, -10);
+        envScene.add(stripMagenta);
+
+        const stripEmerald = new THREE.Mesh(new THREE.BoxGeometry(24, 3, 24), new THREE.MeshBasicMaterial({ color: 0x10b981 }));
+        stripEmerald.position.set(12, -14, 0);
+        envScene.add(stripEmerald);
+
+        return pmremGenerator.fromScene(envScene, 0.04).texture;
+      }
+
+      scene.environment = buildPrismEnvMap('prism');
+
+      const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x1e1b4b, 0.95);
+      scene.add(hemiLight);
+
+      const keyLight = new THREE.DirectionalLight(0xfffbeb, 2.4);
+      keyLight.position.set(9, 16, 12);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.width = 2048;
+      keyLight.shadow.mapSize.height = 2048;
+      scene.add(keyLight);
+
+      const cyanRimLight = new THREE.DirectionalLight(0x22d3ee, 1.8);
+      cyanRimLight.position.set(-12, 8, -10);
+      scene.add(cyanRimLight);
+
+      const magentaRimLight = new THREE.DirectionalLight(0xe879f9, 1.6);
+      magentaRimLight.position.set(12, 6, -9);
+      scene.add(magentaRimLight);
+
+      const corePointLight = new THREE.PointLight(0x22d3ee, 2.6, 12);
+      corePointLight.position.set(0, 0.5, 0.8);
+      scene.add(corePointLight);
+
+      // ==========================================
+      // 4. POLYCHROMATIC JEWEL & CLOISONNÉ MATERIALS
+      // ==========================================
+      const mats = {
+        goldImperial: new THREE.MeshStandardMaterial({
+          color: 0xfbbf24,
+          metalness: 0.94,
+          roughness: 0.14
+        }),
+        titaniumWhite: new THREE.MeshStandardMaterial({
+          color: 0xe2e8f0,
+          metalness: 0.90,
+          roughness: 0.16
+        }),
+        cobaltArmor: new THREE.MeshStandardMaterial({
+          color: 0x1e3a8a,
+          metalness: 0.88,
+          roughness: 0.20
+        }),
+        emeraldEnamel: new THREE.MeshPhysicalMaterial({
+          color: 0x10b981,
+          emissive: 0x064e3b,
+          emissiveIntensity: 0.35,
+          metalness: 0.45,
+          roughness: 0.12,
+          clearcoat: 1.0
+        }),
+        cyanPrism: new THREE.MeshPhysicalMaterial({
+          color: 0x06b6d4,
+          emissive: 0x0891b2,
+          emissiveIntensity: 0.50,
+          metalness: 0.20,
+          roughness: 0.08,
+          transparent: true,
+          opacity: 0.86
+        }),
+        amethystGem: new THREE.MeshPhysicalMaterial({
+          color: 0xa855f7,
+          emissive: 0x6b21a8,
+          emissiveIntensity: 0.55,
+          metalness: 0.25,
+          roughness: 0.08,
+          transparent: true,
+          opacity: 0.88
+        }),
+        roseRuby: new THREE.MeshPhysicalMaterial({
+          color: 0xf43f5e,
+          emissive: 0x9f1239,
+          emissiveIntensity: 0.55,
+          metalness: 0.20,
+          roughness: 0.08,
+          transparent: true,
+          opacity: 0.90
+        }),
+        amberSolar: new THREE.MeshPhysicalMaterial({
+          color: 0xf59e0b,
+          emissive: 0xb45309,
+          emissiveIntensity: 0.50,
+          metalness: 0.35,
+          roughness: 0.10,
+          transparent: true,
+          opacity: 0.88
+        }),
+        copperCoil: new THREE.MeshStandardMaterial({
+          color: 0xea580c,
+          metalness: 0.90,
+          roughness: 0.18
+        }),
+        neonWireCyan: new THREE.LineBasicMaterial({
+          color: 0x22d3ee,
+          transparent: true,
+          opacity: 0.65
+        }),
+        neonWireGold: new THREE.LineBasicMaterial({
+          color: 0xfbbf24,
+          transparent: true,
+          opacity: 0.60
+        }),
+        neonWireMagenta: new THREE.LineBasicMaterial({
+          color: 0xe879f9,
+          transparent: true,
+          opacity: 0.55
+        }),
+        leaderDash: new THREE.LineDashedMaterial({
+          color: 0x22d3ee,
+          dashSize: 0.18,
+          gapSize: 0.10,
+          transparent: true,
+          opacity: 0.0
+        })
+      };
+
+      // ==========================================
+      // 5. BUILD THE 12 SUBSYSTEMS OF PAVO PRISMATICA
+      // ==========================================
+      const peacockRoot = new THREE.Group();
+      scene.add(peacockRoot);
+
+      const interactableMeshes = [];
+      const subsystems = {};
+
+      // Each registered subsystem has:
+      // - basePos (3D assembled position)
+      // - pos2D (2D flat blueprint layout position in XY plane with Z ~ 0!)
+      // - scale2D (how the 3D group flattens in Z when in 2D blueprint mode)
+      // - explodeVec (3D explosion vector)
+      function registerSubsystem(key, group, pos2D, scale2D, explodeVec, parentGroup) {
+        group.userData.basePos = group.position.clone();
+        group.userData.pos2D = pos2D.clone();
+        group.userData.scale2D = scale2D.clone();
+        group.userData.explodeVec = explodeVec.clone();
+        subsystems[key] = group;
+        (parentGroup || peacockRoot).add(group);
+      }
+
+      function tagAndAddNeonEdges(object3d, subsystemKey, wireMat) {
+        const meshes = [];
+        object3d.traverse((child) => {
+          if (child.isMesh) {
+            child.userData.subsystem = subsystemKey;
+            child.castShadow = true;
+            child.receiveShadow = true;
+            interactableMeshes.push(child);
+            meshes.push(child);
+          }
+        });
+        // Add glowing 2D/3D vector blueprint edges to every mesh so 2D blueprint mode looks like an ultra-crisp glowing CAD hologram!
+        meshes.forEach((m) => {
+          if (m.geometry) {
+            const edgesGeo = new THREE.EdgesGeometry(m.geometry, 28);
+            const line = new THREE.LineSegments(edgesGeo, wireMat || mats.neonWireCyan);
+            m.add(line);
+          }
+        });
+      }
+
+      // ------------------------------------------
+      // SYS-01: FIBER-OPTIC CORONA CREST (01 九翎光纤琉璃羽冠)
+      // ------------------------------------------
+      const s01Crest = new THREE.Group();
+      s01Crest.position.set(0, 2.72, 1.85);
+      registerSubsystem(
+        's01_crest',
+        s01Crest,
+        new THREE.Vector3(0, 2.95, 0.05),
+        new THREE.Vector3(1.15, 1.15, 0.08),
+        new THREE.Vector3(0, 1.85, 1.45)
+      );
+
+      const crestGems = [];
+      for (let i = 0; i < 9; i++) {
+        const angle = ((i - 4) / 4) * 0.72;
+        const plume = new THREE.Group();
+        plume.rotation.z = -angle;
+        plume.rotation.x = (i % 2 === 0 ? 0.12 : -0.12);
+
+        const stemH = 0.68 + (4 - Math.abs(i - 4)) * 0.07;
+        const stem = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.012, 0.022, stemH, 8),
+          mats.goldImperial
+        );
+        stem.position.y = stemH * 0.5;
+        plume.add(stem);
+
+        const gemMat = (i % 3 === 0) ? mats.cyanPrism : (i % 3 === 1 ? mats.amethystGem : mats.roseRuby);
+        const tipGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.075, 0), gemMat);
+        tipGem.position.y = stemH + 0.06;
+        tipGem.scale.set(0.8, 1.4, 0.8);
+        plume.add(tipGem);
+        crestGems.push(tipGem);
+
+        const halo = new THREE.Mesh(new THREE.TorusGeometry(0.095, 0.01, 8, 18), mats.goldImperial);
+        halo.position.y = stemH + 0.06;
+        plume.add(halo);
+
+        s01Crest.add(plume);
+      }
+      tagAndAddNeonEdges(s01Crest, 's01_crest', mats.neonWireCyan);
+
+      // ------------------------------------------
+      // SYS-02: PRISMATIC OPTIC CRANIUM (02 多面体宝石复眼颅首)
+      // ------------------------------------------
+      const s02Cranium = new THREE.Group();
+      s02Cranium.position.set(0, 2.18, 1.85);
+      registerSubsystem(
+        's02_cranium',
+        s02Cranium,
+        new THREE.Vector3(0, 2.25, 0.08),
+        new THREE.Vector3(1.1, 1.1, 0.08),
+        new THREE.Vector3(0, 1.15, 2.15)
+      );
+
+      const headFacet = new THREE.Mesh(new THREE.OctahedronGeometry(0.38, 1), mats.cobaltArmor);
+      headFacet.scale.set(0.85, 0.92, 1.25);
+      s02Cranium.add(headFacet);
+
+      const crownFiligree = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.14, 0.62), mats.goldImperial);
+      crownFiligree.position.set(0, 0.28, 0.04);
+      s02Cranium.add(crownFiligree);
+
+      // Upper & Lower Harmonic Beak
+      const upperBeak = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.62, 4), mats.goldImperial);
+      upperBeak.rotation.x = Math.PI * 0.52;
+      upperBeak.position.set(0, 0.04, 0.68);
+      s02Cranium.add(upperBeak);
+
+      const lowerBeak = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.48, 4), mats.titaniumWhite);
+      lowerBeak.rotation.x = Math.PI * 0.58;
+      lowerBeak.position.set(0, -0.09, 0.60);
+      s02Cranium.add(lowerBeak);
+
+      // Left & Right Multi-ring Emerald/Ruby Optical Turrets
+      [-1, 1].forEach((side) => {
+        const eyeRing = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.025, 10, 20), mats.goldImperial);
+        eyeRing.position.set(side * 0.31, 0.06, 0.16);
+        eyeRing.rotation.y = Math.PI / 2;
+        s02Cranium.add(eyeRing);
+
+        const eyeGem = new THREE.Mesh(new THREE.IcosahedronGeometry(0.12, 1), mats.roseRuby);
+        eyeGem.position.set(side * 0.33, 0.06, 0.16);
+        s02Cranium.add(eyeGem);
+      });
+      tagAndAddNeonEdges(s02Cranium, 's02_cranium', mats.neonWireGold);
+
+      // ------------------------------------------
+      // SYS-03: MAG-LEV CERVICAL RINGS (03 十节磁悬浮霓虹颈环)
+      // ------------------------------------------
+      const s03Neck = new THREE.Group();
+      s03Neck.position.set(0, 1.22, 1.38);
+      registerSubsystem(
+        's03_neck',
+        s03Neck,
+        new THREE.Vector3(0, 1.25, 0.06),
+        new THREE.Vector3(1.0, 1.0, 0.08),
+        new THREE.Vector3(0, 0.55, 1.85)
+      );
+
+      const neckRings = [];
+      for (let i = 0; i < 10; i++) {
+        const t = i / 9;
+        // Graceful S-curve from chest (0, -0.55, -0.25) up to head (0, 0.85, 0.42)
+        const ny = -0.52 + t * 1.38;
+        const nz = -0.22 + Math.sin(t * Math.PI) * 0.28 + t * 0.45;
+        const r = 0.36 * (1 - t * 0.42);
+
+        const ringUnit = new THREE.Group();
+        ringUnit.position.set(0, ny, nz);
+        ringUnit.rotation.x = 0.25 - t * 0.45;
+
+        const ringMat = (i % 3 === 0) ? mats.cyanPrism : (i % 3 === 1 ? mats.emeraldEnamel : mats.goldImperial);
+        const torus = new THREE.Mesh(new THREE.TorusGeometry(r, 0.032, 10, 24), ringMat);
+        torus.rotation.x = Math.PI / 2;
+        ringUnit.add(torus);
+
+        // Floating inner hex core
+        const innerNode = new THREE.Mesh(
+          new THREE.OctahedronGeometry(r * 0.42, 0),
+          i % 2 === 0 ? mats.amethystGem : mats.cyanPrism
+        );
+        ringUnit.add(innerNode);
+
+        s03Neck.add(ringUnit);
+        neckRings.push({ group: ringUnit, baseY: ny, baseZ: nz, index: i });
+      }
+      tagAndAddNeonEdges(s03Neck, 's03_neck', mats.neonWireCyan);
+
+      // ------------------------------------------
+      // SYS-04: GYROSCOPIC ARMILLARY CORE (04 三轴正交浑天仪星核)
+      // ------------------------------------------
+      const s04Core = new THREE.Group();
+      s04Core.position.set(0, 0.28, 0.65);
+      registerSubsystem(
+        's04_core',
+        s04Core,
+        new THREE.Vector3(0, 0.28, 0.06),
+        new THREE.Vector3(1.15, 1.15, 0.08),
+        new THREE.Vector3(0, 1.45, 0.85)
+      );
+
+      const gyroRing1 = new THREE.Mesh(new THREE.TorusGeometry(0.78, 0.04, 12, 48), mats.goldImperial);
+      const gyroRing2 = new THREE.Mesh(new THREE.TorusGeometry(0.64, 0.035, 12, 42), mats.cyanPrism);
+      const gyroRing3 = new THREE.Mesh(new THREE.TorusGeometry(0.50, 0.03, 12, 36), mats.roseRuby);
+      s04Core.add(gyroRing1, gyroRing2, gyroRing3);
+
+      const plasmaCoreStar = new THREE.Mesh(new THREE.IcosahedronGeometry(0.32, 1), mats.amethystGem);
+      const plasmaCoreCage = new THREE.Mesh(new THREE.DodecahedronGeometry(0.38, 0), mats.goldImperial);
+      plasmaCoreCage.material = mats.goldImperial.clone();
+      plasmaCoreCage.material.wireframe = true;
+      s04Core.add(plasmaCoreStar, plasmaCoreCage);
+
+      tagAndAddNeonEdges(s04Core, 's04_core', mats.neonWireGold);
+
+      // ------------------------------------------
+      // SYS-05: CLOISONNÉ LOTUS CARAPACE (05 八瓣掐丝珐琅胸甲)
+      // ------------------------------------------
+      const s05Breast = new THREE.Group();
+      s05Breast.position.set(0, 0.22, 0.85);
+      registerSubsystem(
+        's05_breast',
+        s05Breast,
+        new THREE.Vector3(0, 0.22, 0.04),
+        new THREE.Vector3(1.1, 1.1, 0.08),
+        new THREE.Vector3(0, -0.65, 2.25)
+      );
+
+      const lotusPetals = [];
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const petalPivot = new THREE.Group();
+        petalPivot.rotation.z = a;
+
+        const petalGeo = new THREE.ConeGeometry(0.28, 0.72, 4);
+        petalGeo.scale(1.0, 1.0, 0.22);
+        const petalMat = (i % 2 === 0) ? mats.emeraldEnamel : mats.cobaltArmor;
+        const petalMesh = new THREE.Mesh(petalGeo, petalMat);
+        petalMesh.position.set(0, 0.62, 0.28);
+        petalMesh.rotation.x = -0.45;
+        petalPivot.add(petalMesh);
+
+        const goldTrim = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.68, 0.08), mats.goldImperial);
+        goldTrim.position.set(0, 0.62, 0.32);
+        goldTrim.rotation.x = -0.45;
+        petalPivot.add(goldTrim);
+
+        s05Breast.add(petalPivot);
+        lotusPetals.push(petalPivot);
+      }
+      tagAndAddNeonEdges(s05Breast, 's05_breast', mats.neonWireCyan);
+
+      // ------------------------------------------
+      // SYS-06: KINETIC ORIGAMI WINGS (06 双联十二羽折纸光翼)
+      // ------------------------------------------
+      const s06Wings = new THREE.Group();
+      s06Wings.position.set(0, 0.38, 0.45);
+      registerSubsystem(
+        's06_wings',
+        s06Wings,
+        new THREE.Vector3(0, 0.38, 0.04),
+        new THREE.Vector3(1.18, 1.05, 0.06),
+        new THREE.Vector3(0, 0.85, 1.25)
+      );
+
+      const origamiWingPivots = [];
+      [-1, 1].forEach((side) => {
+        const wingRoot = new THREE.Group();
+        wingRoot.position.set(side * 0.78, 0, 0);
+
+        const shoulderHub = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 1), mats.goldImperial);
+        wingRoot.add(shoulderHub);
+
+        const blades = [];
+        for (let b = 0; b < 10; b++) {
+          const bt = b / 9;
+          const bladeGroup = new THREE.Group();
+          bladeGroup.position.set(side * (0.18 + bt * 1.45), (1 - bt) * 0.25, -bt * 0.65);
+
+          const bladeLen = 1.35 - bt * 0.45;
+          const bladeGeo = new THREE.ConeGeometry(0.18, bladeLen, 3);
+          bladeGeo.scale(1.0, 1.0, 0.15);
+          const bMat = (b % 3 === 0) ? mats.cyanPrism : (b % 3 === 1 ? mats.amethystGem : mats.emeraldEnamel);
+          const bladeMesh = new THREE.Mesh(bladeGeo, bMat);
+          bladeMesh.rotation.z = side * (-Math.PI * 0.38 - bt * 0.35);
+          bladeGroup.add(bladeMesh);
+
+          const spar = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, bladeLen, 6), mats.goldImperial);
+          spar.rotation.z = bladeMesh.rotation.z;
+          bladeGroup.add(spar);
+
+          wingRoot.add(bladeGroup);
+          blades.push(bladeGroup);
+        }
+
+        s06Wings.add(wingRoot);
+        origamiWingPivots.push({ root: wingRoot, blades, side });
+      });
+      tagAndAddNeonEdges(s06Wings, 's06_wings', mats.neonWireMagenta);
+
+      // ------------------------------------------
+      // SYS-07: PNEUMATIC FAN ACTUATOR (07 十九路行星开屏枢轴盘)
+      // ------------------------------------------
+      const s07Actuator = new THREE.Group();
+      s07Actuator.position.set(0, 0.35, -0.55);
+      registerSubsystem(
+        's07_actuator',
+        s07Actuator,
+        new THREE.Vector3(0, 0.35, -0.02),
+        new THREE.Vector3(1.0, 1.0, 0.08),
+        new THREE.Vector3(0, -0.45, -1.65)
+      );
+
+      const sunWheel = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.06, 12, 36), mats.copperCoil);
+      s07Actuator.add(sunWheel);
+
+      const innerHub = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.22, 18), mats.cobaltArmor);
+      innerHub.rotation.x = Math.PI / 2;
+      s07Actuator.add(innerHub);
+
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.65, 8), mats.goldImperial);
+        piston.position.set(Math.cos(a) * 0.56, Math.sin(a) * 0.56, 0);
+        piston.rotation.z = a - Math.PI / 2;
+        s07Actuator.add(piston);
+      }
+      tagAndAddNeonEdges(s07Actuator, 's07_actuator', mats.neonWireGold);
+
+      // ------------------------------------------
+      // SYS-08: CLOISONNÉ INNER PLUMES (08 九翎掐丝珐琅内屏)
+      // ------------------------------------------
+      const s08InnerFan = new THREE.Group();
+      s08InnerFan.position.set(0, 0.42, -0.68);
+      registerSubsystem(
+        's08_inner_fan',
+        s08InnerFan,
+        new THREE.Vector3(0, 0.42, -0.04),
+        new THREE.Vector3(1.05, 1.05, 0.05),
+        new THREE.Vector3(0, 0.95, -1.95)
+      );
+
+      const innerPlumePivots = [];
+      for (let i = 0; i < 9; i++) {
+        const norm = (i - 4) / 4; // -1 .. +1
+        const maxAngle = -norm * (Math.PI * 0.44);
+        const pivot = new THREE.Group();
+        pivot.userData.maxAngle = maxAngle;
+        pivot.userData.norm = norm;
+
+        // Ornate filigree feather shaft + diamond lattice vane
+        const len = 2.65;
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.032, len, 8), mats.goldImperial);
+        shaft.position.y = len * 0.5;
+        pivot.add(shaft);
+
+        // 3 Nested Cloisonne Diamond Vanes along the plume
+        [0.95, 1.55, 2.15].forEach((yPos, vIdx) => {
+          const w = 0.26 + vIdx * 0.08;
+          const vaneGeo = new THREE.OctahedronGeometry(w, 0);
+          vaneGeo.scale(0.85, 1.45, 0.12);
+          const vMat = (i + vIdx) % 2 === 0 ? mats.emeraldEnamel : mats.cyanPrism;
+          const vane = new THREE.Mesh(vaneGeo, vMat);
+          vane.position.y = yPos;
+          pivot.add(vane);
+        });
+
+        s08InnerFan.add(pivot);
+        innerPlumePivots.push(pivot);
+      }
+      tagAndAddNeonEdges(s08InnerFan, 's08_inner_fan', mats.neonWireCyan);
+
+      // ------------------------------------------
+      // SYS-09: HOLOGRAPHIC MAIN TRAIN (09 十翎全息虹彩主尾屏)
+      // & SYS-10: FLOATING PRISM OCELLI (10 十九眼悬浮八面体眼斑)
+      // ------------------------------------------
+      const s09OuterFan = new THREE.Group();
+      s09OuterFan.position.set(0, 0.45, -0.92);
+      registerSubsystem(
+        's09_outer_fan',
+        s09OuterFan,
+        new THREE.Vector3(0, 0.45, -0.08),
+        new THREE.Vector3(1.06, 1.06, 0.04),
+        new THREE.Vector3(0, 1.65, -2.85)
+      );
+
+      const s10OcelliGroup = new THREE.Group();
+      s10OcelliGroup.position.set(0, 0.45, -0.82);
+      registerSubsystem(
+        's10_ocelli',
+        s10OcelliGroup,
+        new THREE.Vector3(0, 0.45, 0.02),
+        new THREE.Vector3(1.06, 1.06, 0.08),
+        new THREE.Vector3(0, 2.35, -3.65)
+      );
+
+      const outerPlumePivots = [];
+      const ocelliNodes = [];
+      const numMainFeathers = 11;
+
+      for (let i = 0; i < numMainFeathers; i++) {
+        const norm = (i - 5) / 5; // -1 .. +1
+        const maxAngle = -norm * (Math.PI * 0.50);
+        const fPivot = new THREE.Group();
+        fPivot.userData.maxAngle = maxAngle;
+        fPivot.userData.norm = norm;
+        fPivot.userData.index = i;
+
+        const fLen = 4.35 - Math.abs(norm) * 0.25;
+        const rachis = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.04, fLen, 8), mats.goldImperial);
+        rachis.position.y = fLen * 0.5;
+        fPivot.add(rachis);
+
+        // Chevron holographic barbs along feather shaft
+        for (let k = 1; k <= 6; k++) {
+          const by = (k / 7) * fLen;
+          const bw = 0.24 + (k / 7) * 0.28;
+          const barbMat = (i + k) % 4 === 0
+            ? mats.cyanPrism
+            : ((i + k) % 4 === 1 ? mats.amethystGem : ((i + k) % 4 === 2 ? mats.emeraldEnamel : mats.roseRuby));
+
+          [-1, 1].forEach((bSide) => {
+            const barb = new THREE.Mesh(new THREE.BoxGeometry(bw, 0.045, 0.025), barbMat);
+            barb.position.set(bSide * bw * 0.48, by, 0);
+            barb.rotation.z = bSide * 0.42;
+            fPivot.add(barb);
+          });
+        }
+
+        s09OuterFan.add(fPivot);
+        outerPlumePivots.push(fPivot);
+
+        // Corresponding 3D Floating Prism Ocellus Eye-Gem at the tip of each outer feather + 8 inner feathers = 19 Ocelli!
+        const ocellusPivot = new THREE.Group();
+        ocellusPivot.userData.maxAngle = maxAngle;
+        ocellusPivot.userData.radius = fLen + 0.12;
+        ocellusPivot.userData.index = i;
+
+        const eyeHolder = new THREE.Group();
+        eyeHolder.position.y = fLen + 0.12;
+
+        // Outer Golden Tear-Ring
+        const outerHalo = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.026, 10, 28), mats.goldImperial);
+        eyeHolder.add(outerHalo);
+
+        // Middle Cyan Iridescent Ring
+        const midHalo = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.022, 10, 24), mats.cyanPrism);
+        eyeHolder.add(midHalo);
+
+        // 3D Pop-up Octahedral Gem Pupil (flattens in 2D, pops out in 3D!)
+        const pupilMat = (i % 3 === 0) ? mats.roseRuby : (i % 3 === 1 ? mats.amethystGem : mats.amberSolar);
+        const pupilGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.17, 0), pupilMat);
+        pupilGem.scale.set(1.0, 1.25, 1.4);
+        eyeHolder.add(pupilGem);
+
+        ocellusPivot.add(eyeHolder);
+        s10OcelliGroup.add(ocellusPivot);
+        ocelliNodes.push({ pivot: ocellusPivot, holder: eyeHolder, gem: pupilGem, midHalo });
+      }
+
+      // Add 8 inner-tier Ocelli eyes so total = 19 Ocelli!
+      for (let i = 0; i < 8; i++) {
+        const norm = (i - 3.5) / 3.5;
+        const maxAngle = -norm * (Math.PI * 0.42);
+        const ocellusPivot = new THREE.Group();
+        ocellusPivot.userData.maxAngle = maxAngle;
+        ocellusPivot.userData.radius = 2.85;
+        ocellusPivot.userData.index = i + 11;
+
+        const eyeHolder = new THREE.Group();
+        eyeHolder.position.y = 2.85;
+
+        const outerHalo = new THREE.Mesh(new THREE.TorusGeometry(0.23, 0.02, 8, 24), mats.goldImperial);
+        const midHalo = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.018, 8, 20), mats.emeraldEnamel);
+        const pupilGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.12, 0), mats.cyanPrism);
+        eyeHolder.add(outerHalo, midHalo, pupilGem);
+
+        ocellusPivot.add(eyeHolder);
+        s10OcelliGroup.add(ocellusPivot);
+        ocelliNodes.push({ pivot: ocellusPivot, holder: eyeHolder, gem: pupilGem, midHalo });
+      }
+
+      tagAndAddNeonEdges(s09OuterFan, 's09_outer_fan', mats.neonWireCyan);
+      tagAndAddNeonEdges(s10OcelliGroup, 's10_ocelli', mats.neonWireMagenta);
+
+      // ------------------------------------------
+      // SYS-11: TWIN TESLA ARC RESONATORS (11 双联特斯拉电弧谐振浮游炮)
+      // ------------------------------------------
+      const s11Tesla = new THREE.Group();
+      s11Tesla.position.set(0, 0.85, 0.15);
+      registerSubsystem(
+        's11_tesla',
+        s11Tesla,
+        new THREE.Vector3(0, 0.85, 0.04),
+        new THREE.Vector3(1.12, 1.12, 0.08),
+        new THREE.Vector3(0, 0.95, 1.85)
+      );
+
+      const teslaCoils = [];
+      [-1, 1].forEach((side) => {
+        const pod = new THREE.Group();
+        pod.position.set(side * 2.15, 0, 0);
+        pod.rotation.z = side * -0.35;
+
+        const coreShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, 1.15, 12), mats.copperCoil);
+        pod.add(coreShaft);
+
+        for (let r = 0; r < 4; r++) {
+          const capRing = new THREE.Mesh(
+            new THREE.TorusGeometry(0.28 - r * 0.04, 0.022, 8, 20),
+            r % 2 === 0 ? mats.cyanPrism : mats.goldImperial
+          );
+          capRing.rotation.x = Math.PI / 2;
+          capRing.position.y = -0.3 + r * 0.22;
+          pod.add(capRing);
+        }
+
+        const emitterSphere = new THREE.Mesh(new THREE.IcosahedronGeometry(0.18, 1), mats.amethystGem);
+        emitterSphere.position.y = 0.68;
+        pod.add(emitterSphere);
+
+        s11Tesla.add(pod);
+        teslaCoils.push({ pod, emitter: emitterSphere, side });
+      });
+      tagAndAddNeonEdges(s11Tesla, 's11_tesla', mats.neonWireCyan);
+
+      // ------------------------------------------
+      // SYS-12: ANTI-GRAV TALONS & 2D⇄3D ASTROLABE (12 钛金禽足与全息星盘)
+      // ------------------------------------------
+      const s12Talons = new THREE.Group();
+      s12Talons.position.set(0, -1.25, 0.35);
+      registerSubsystem(
+        's12_talons',
+        s12Talons,
+        new THREE.Vector3(0, -1.25, 0.0),
+        new THREE.Vector3(1.0, 1.0, 0.12),
+        new THREE.Vector3(0, -1.85, 0.35)
+      );
+
+      [-0.52, 0.52].forEach((xOff) => {
+        const leg = new THREE.Group();
+        leg.position.set(xOff, 0.45, 0);
+
+        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.06, 0.78, 10), mats.cobaltArmor);
+        thigh.position.y = -0.35;
+        leg.add(thigh);
+
+        const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.04, 0.75, 10), mats.goldImperial);
+        shin.position.y = -0.95;
+        leg.add(shin);
+
+        [-0.14, 0, 0.14].forEach((clawAngle) => {
+          const claw = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.32, 6), mats.titaniumWhite);
+          claw.rotation.x = Math.PI * 0.48;
+          claw.rotation.z = -clawAngle;
+          claw.position.set(clawAngle * 0.8, -1.32, 0.18);
+          leg.add(claw);
+        });
+
+        s12Talons.add(leg);
+      });
+
+      // Multi-ring Mandala Astrolabe Base (Rotates from horizontal floor in 3D to vertical backdrop in 2D!)
+      const astrolabePlatform = new THREE.Group();
+      astrolabePlatform.position.set(0, -0.88, -0.35);
+      s12Talons.add(astrolabePlatform);
+
+      const astrolabeRings = [];
+      [2.2, 3.6, 5.0].forEach((r, idx) => {
+        const rMesh = new THREE.Mesh(
+          new THREE.RingGeometry(r - 0.06, r, 64),
+          new THREE.MeshBasicMaterial({
+            color: idx === 0 ? 0x22d3ee : (idx === 1 ? 0xfbbf24 : 0xa855f7),
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.42
+          })
+        );
+        rMesh.rotation.x = -Math.PI / 2;
+        astrolabePlatform.add(rMesh);
+        astrolabeRings.push(rMesh);
+      });
+      tagAndAddNeonEdges(s12Talons, 's12_talons', mats.neonWireGold);
+
+      // ==========================================
+      // 6. 2D⇄3D LASER SCANNER PLANE & LEADER LINES
+      // ==========================================
+      const scanPlaneGeo = new THREE.PlaneGeometry(14, 0.08);
+      const scanPlaneMat = new THREE.MeshBasicMaterial({
+        color: 0x22d3ee,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.0
+      });
+      const scanLaserPlane = new THREE.Mesh(scanPlaneGeo, scanPlaneMat);
+      scene.add(scanLaserPlane);
+
+      // Dashed Engineering Leader Lines for 12 Subsystems
+      const leaderLineGeo = new THREE.BufferGeometry();
+      const leaderPositions = new Float32Array(PART_KEYS.length * 2 * 3);
+      leaderLineGeo.setAttribute('position', new THREE.BufferAttribute(leaderPositions, 3));
+      const leaderLines = new THREE.LineSegments(leaderLineGeo, mats.leaderDash);
+      peacockRoot.add(leaderLines);
+
+      // Polychromatic Floating Prism Particles
+      const pCount = 140;
+      const pGeo = new THREE.BufferGeometry();
+      const pPositions = new Float32Array(pCount * 3);
+      const pColors = new Float32Array(pCount * 3);
+      const palette = [
+        new THREE.Color(0x22d3ee),
+        new THREE.Color(0xfbbf24),
+        new THREE.Color(0xa855f7),
+        new THREE.Color(0x10b981),
+        new THREE.Color(0xf43f5e)
+      ];
+      for (let i = 0; i < pCount; i++) {
+        pPositions[i * 3] = (Math.random() - 0.5) * 16;
+        pPositions[i * 3 + 1] = (Math.random() - 0.3) * 10;
+        pPositions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+        const c = palette[i % palette.length];
+        pColors[i * 3] = c.r;
+        pColors[i * 3 + 1] = c.g;
+        pColors[i * 3 + 2] = c.b;
+      }
+      pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+      pGeo.setAttribute('color', new THREE.BufferAttribute(pColors, 3));
+      const prismParticles = new THREE.Points(
+        pGeo,
+        new THREE.PointsMaterial({ size: 0.09, vertexColors: true, transparent: true, opacity: 0.65 })
+      );
+      scene.add(prismParticles);
+
+      // ==========================================
+      // 7. 12 INTERACTIVE CALLOUT PINS ON 3D OVERLAY
+      // ==========================================
+      const annotationsLayer = document.getElementById('annotations-layer');
+      const calloutDefs = [
+        { key: 's01_crest', num: '01', label: '光纤羽冠 CREST', anchorObj: s01Crest, offset: new THREE.Vector3(0, 0.85, 0.1) },
+        { key: 's02_cranium', num: '02', label: '棱镜颅首 CRANIUM', anchorObj: s02Cranium, offset: new THREE.Vector3(0.55, 0.15, 0.4) },
+        { key: 's03_neck', num: '03', label: '磁浮颈环 MAG-NECK', anchorObj: s03Neck, offset: new THREE.Vector3(-0.65, 0.25, 0.2) },
+        { key: 's04_core', num: '04', label: '浑天仪核 GYRO CORE', anchorObj: s04Core, offset: new THREE.Vector3(0, 0.1, 0.85) },
+        { key: 's05_breast', num: '05', label: '莲瓣胸甲 LOTUS', anchorObj: s05Breast, offset: new THREE.Vector3(0.85, -0.25, 0.5) },
+        { key: 's06_wings', num: '06', label: '折纸光翼 ORIGAMI', anchorObj: s06Wings, offset: new THREE.Vector3(2.25, 0.15, 0.1) },
+        { key: 's07_actuator', num: '07', label: '开屏枢轴 ACTUATOR', anchorObj: s07Actuator, offset: new THREE.Vector3(-0.95, -0.35, -0.2) },
+        { key: 's08_inner_fan', num: '08', label: '珐琅内屏 CLOISONNÉ', anchorObj: s08InnerFan, offset: new THREE.Vector3(1.65, 1.65, -0.1) },
+        { key: 's09_outer_fan', num: '09', label: '全息主屏 TRAIN FAN', anchorObj: s09OuterFan, offset: new THREE.Vector3(-2.65, 2.35, -0.2) },
+        { key: 's10_ocelli', num: '10', label: '悬浮眼斑 19-OCELLI', anchorObj: s10OcelliGroup, offset: new THREE.Vector3(0, 4.45, 0.0) },
+        { key: 's11_tesla', num: '11', label: '电弧谐振 TESLA', anchorObj: s11Tesla, offset: new THREE.Vector3(-2.45, 0.45, 0.1) },
+        { key: 's12_talons', num: '12', label: '星盘禽足 TALONS', anchorObj: s12Talons, offset: new THREE.Vector3(0.95, -0.85, 0.4) }
+      ];
+
+      const calloutElements = calloutDefs.map((def) => {
+        const info = SUBSYSTEM_INFO[def.key];
+        const el = document.createElement('div');
+        el.className = 'callout-pin flex items-center gap-1.5 group';
+        el.innerHTML = `
+          <div class="callout-dot" style="background: ${info.color}; color: ${info.color}; box-shadow: 0 0 10px ${info.color};"></div>
+          <div class="pin-tag hud-panel px-1.5 py-0.5 rounded-sm font-mono-tech text-[9.5px] tracking-wider whitespace-nowrap opacity-85 group-hover:opacity-100 transition-opacity" style="color: var(--text-main); border-color: ${info.color}66;">
+            <span style="color: ${info.color}; font-weight: 700;">${def.num}</span> ${def.label}
+          </div>
+        `;
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectSubsystem(def.key);
+        });
+        annotationsLayer.appendChild(el);
+        return { def, el };
+      });
+
+      // ==========================================
+      // 8. WEB AUDIO HARMONIC CHIME SYNTH
+      // ==========================================
+      let audioCtx = null;
+      let lastChimeTime = 0;
+
+      function initAudioIfNeeded() {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      }
+
+      function playCrystalPulse(freqHint) {
+        if (!state.soundEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freqHint || 880, now);
+        osc.frequency.exponentialRampToValueAtTime((freqHint || 880) * 1.5, now + 0.065);
+        gain.gain.setValueAtTime(0.03, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+
+      // ==========================================
+      // 9. UI CONTROLS & SUBSYSTEM SELECTION
+      // ==========================================
+      function selectSubsystem(key) {
+        state.selectedPart = key || 'all';
+        const info = SUBSYSTEM_INFO[state.selectedPart] || SUBSYSTEM_INFO.all;
+        document.getElementById('part-code').textContent = info.code;
+        document.getElementById('part-badge').textContent = info.badge || '12-PART ARRAY';
+        document.getElementById('part-title').textContent = info.title;
+        document.getElementById('part-desc').textContent = info.desc;
+        document.getElementById('part-material').textContent = info.material;
+
+        calloutElements.forEach(({ def, el }) => {
+          el.classList.toggle('active-pin', def.key === state.selectedPart);
+        });
+        Object.keys(matrixButtons).forEach((k) => {
+          matrixButtons[k].classList.toggle('active', k === state.selectedPart);
+        });
+
+        const resetBtn = document.getElementById('btn-reset-focus');
+        if (state.selectedPart !== 'all' && info.camOffset) {
+          resetBtn.classList.remove('hidden');
+          camTargetSpherical.theta = info.camOffset.theta;
+          camTargetSpherical.phi = info.camOffset.phi;
+          camTargetSpherical.radius = info.camOffset.radius;
+          camTargetSpherical.target.copy(info.targetPos);
+          playCrystalPulse(1046);
+        } else {
+          resetBtn.classList.add('hidden');
+          camTargetSpherical.target.set(0, 0.85, 0.0);
+          camTargetSpherical.radius = 17.5;
+        }
+      }
+
+      document.getElementById('btn-reset-focus').addEventListener('click', () => selectSubsystem('all'));
+
+      // 2D <-> 3D Dimensional Slider & Button
+      const sliderDim = document.getElementById('slider-dim');
+      const dimPct = document.getElementById('dim-pct');
+
+      function setDimensionTarget(val, moveCam) {
+        state.targetDim = val / 100;
+        sliderDim.value = val;
+        const pct = Math.round(val);
+        dimPct.textContent = pct === 0 ? '2D FLAT' : (pct === 100 ? '100% 3D' : `${pct}% 2D→3D`);
+        document.getElementById('metric-dim').textContent = pct < 25 ? `2D (${pct}%)` : `3D (${pct}%)`;
+        document.getElementById('status-badge').textContent = pct < 30 ? '2D BLUEPRINT MANDALA' : '3D HOLOGRAPHIC BLOOM';
+
+        if (moveCam) {
+          if (pct < 25) {
+            // Align camera straight-on for crisp 2D architectural blueprint view
+            camTargetSpherical.theta = 0.0;
+            camTargetSpherical.phi = Math.PI / 2;
+            camTargetSpherical.radius = 18.2;
+            camTargetSpherical.target.set(0, 1.0, 0);
+          } else if (pct > 75) {
+            camTargetSpherical.theta = 0.42;
+            camTargetSpherical.phi = 1.18;
+            camTargetSpherical.radius = 17.5;
+            camTargetSpherical.target.set(0, 0.85, 0);
+          }
+        }
+      }
+
+      sliderDim.addEventListener('input', (e) => setDimensionTarget(parseFloat(e.target.value), false));
+      document.getElementById('btn-2d-flat').addEventListener('click', () => setDimensionTarget(0, true));
+      document.getElementById('btn-3d-pop').addEventListener('click', () => setDimensionTarget(100, true));
+      document.getElementById('btn-2d-3d').addEventListener('click', () => {
+        if (state.targetDim > 0.5) setDimensionTarget(0, true);
+        else setDimensionTarget(100, true);
+      });
+
+      // Train Fan Openness Slider & Button
+      const sliderFan = document.getElementById('slider-fan');
+      const fanPct = document.getElementById('fan-pct');
+
+      function setFanTarget(val) {
+        state.targetFan = val / 100;
+        sliderFan.value = val;
+        const deg = Math.round((val / 100) * 180);
+        fanPct.textContent = `${Math.round(val)}% (${deg}°)`;
+        document.getElementById('metric-fan').textContent = `${Math.round(val)}% (${deg}°)`;
+      }
+
+      sliderFan.addEventListener('input', (e) => setFanTarget(parseFloat(e.target.value)));
+      document.getElementById('btn-fan-toggle').addEventListener('click', () => {
+        setFanTarget(state.targetFan > 0.5 ? 8 : 100);
+      });
+
+      // Exploded View Slider
+      const sliderExplode = document.getElementById('slider-explode');
+      const explodePct = document.getElementById('explode-pct');
+
+      function setExplodeTarget(val) {
+        state.targetExplode = val / 100;
+        sliderExplode.value = val;
+        explodePct.textContent = `${Math.round(val)}%`;
+        document.getElementById('metric-exp').textContent = `${Math.round(val)}%`;
+      }
+
+      sliderExplode.addEventListener('input', (e) => setExplodeTarget(parseFloat(e.target.value)));
+      document.getElementById('btn-assembled').addEventListener('click', () => setExplodeTarget(0));
+      document.getElementById('btn-exploded').addEventListener('click', () => setExplodeTarget(100));
+
+      // Camera Presets
+      const camPresets = {
+        'cam-iso': { theta: 0.42, phi: 1.18, radius: 17.5 },
+        'cam-front': { theta: 0.0, phi: Math.PI / 2, radius: 18.0 },
+        'cam-plan': { theta: 0.0, phi: 0.12, radius: 20.0 },
+        'cam-profile': { theta: Math.PI / 2, phi: 1.42, radius: 17.5 }
+      };
+      Object.keys(camPresets).forEach((btnId) => {
+        document.getElementById(btnId).addEventListener('click', () => {
+          Object.keys(camPresets).forEach((id) => document.getElementById(id).classList.remove('active'));
+          document.getElementById(btnId).classList.add('active');
+          const p = camPresets[btnId];
+          camTargetSpherical.theta = p.theta;
+          camTargetSpherical.phi = p.phi;
+          camTargetSpherical.radius = p.radius;
+          camTargetSpherical.target.set(0, 0.85, 0.0);
+        });
+      });
+
+      document.getElementById('btn-orbit').addEventListener('click', (e) => {
+        state.autoOrbit = !state.autoOrbit;
+        e.currentTarget.classList.toggle('active', state.autoOrbit);
+      });
+
+      const btnQuadView = document.getElementById('btn-quad-view');
+      const quadOverlay = document.getElementById('quad-overlay');
+      btnQuadView.addEventListener('click', () => {
+        state.quadView = !state.quadView;
+        btnQuadView.classList.toggle('active', state.quadView);
+        quadOverlay.classList.toggle('hidden', !state.quadView);
+        annotationsLayer.classList.toggle('hidden', state.quadView || !state.showAnnotations);
+      });
+
+      const btnAnnotations = document.getElementById('btn-annotations');
+      btnAnnotations.addEventListener('click', () => {
+        state.showAnnotations = !state.showAnnotations;
+        btnAnnotations.classList.toggle('active', state.showAnnotations);
+        btnAnnotations.querySelector('span:last-child').textContent = state.showAnnotations ? '12 PINS: ON' : '12 PINS: OFF';
+        annotationsLayer.classList.toggle('hidden', state.quadView || !state.showAnnotations);
+      });
+
+      const btnSound = document.getElementById('btn-sound');
+      btnSound.addEventListener('click', () => {
+        initAudioIfNeeded();
+        state.soundEnabled = !state.soundEnabled;
+        btnSound.classList.toggle('active', state.soundEnabled);
+        document.getElementById('sound-label').textContent = state.soundEnabled ? 'AUDIO: ON' : 'AUDIO: OFF';
+        document.getElementById('sound-indicator').style.background = state.soundEnabled ? '#22d3ee' : '#64748b';
+      });
+
+      // 4 Spectrum Color Themes
+      const themes = {
+        'theme-prism': { name: 'prism', bodyClass: '', gold: 0xfbbf24, cyan: 0x06b6d4, emerald: 0x10b981, violet: 0xa855f7 },
+        'theme-neon': { name: 'neon', bodyClass: 'theme-neon', gold: 0xf43f5e, cyan: 0x22d3ee, emerald: 0x3b82f6, violet: 0xe879f9 },
+        'theme-cloisonne': { name: 'cloisonne', bodyClass: 'theme-cloisonne', gold: 0xf59e0b, cyan: 0x10b981, emerald: 0x059669, violet: 0x0284c7 },
+        'theme-phoenix': { name: 'phoenix', bodyClass: 'theme-phoenix', gold: 0xfbbf24, cyan: 0xf97316, emerald: 0xef4444, violet: 0xec4899 }
+      };
+
+      function applyThemeById(tId) {
+        Object.keys(themes).forEach((id) => document.getElementById(id).classList.remove('active'));
+        document.getElementById(tId).classList.add('active');
+        const cfg = themes[tId];
+        state.theme = cfg.name;
+        document.body.className = `blueprint-grid ${cfg.bodyClass}`.trim();
+        mats.goldImperial.color.setHex(cfg.gold);
+        mats.cyanPrism.color.setHex(cfg.cyan);
+        mats.emeraldEnamel.color.setHex(cfg.emerald);
+        mats.amethystGem.color.setHex(cfg.violet);
+        scene.environment = buildPrismEnvMap(cfg.name);
+      }
+
+      Object.keys(themes).forEach((tId) => {
+        document.getElementById(tId).addEventListener('click', () => applyThemeById(tId));
+      });
+
+      // ==========================================
+      // 10. 24-SECOND DIRECTOR AUTO-DEMO (2D→3D + 01..12 TOUR)
+      // ==========================================
+      const btnAutoDemo = document.getElementById('btn-auto-demo');
+      const demoBtnLabel = document.getElementById('demo-btn-label');
+      const demoBanner = document.getElementById('demo-banner');
+      const demoActLabel = document.getElementById('demo-act-label');
+      const demoTimeLabel = document.getElementById('demo-time-label');
+      const demoProgressBar = document.getElementById('demo-progress-bar');
+
+      function startAutoDemo() {
+        state.demoActive = true;
+        state.demoElapsed = 0;
+        btnAutoDemo.classList.add('active');
+        demoBtnLabel.textContent = 'STOP DEMO';
+        demoBanner.classList.remove('hidden');
+      }
+
+
+
+      btnAutoDemo.addEventListener('click', () => {
+        if (state.demoActive) stopAutoDemo();
+        else startAutoDemo();
+      });
+
+      function stopAutoDemo() {
+        state.demoActive = false;
+        btnAutoDemo.classList.remove('active');
+        demoBtnLabel.textContent = 'AUTO DEMO (48s)';
+        demoBanner.classList.add('hidden');
+        scanPlaneMat.opacity = 0;
+        if (state.quadView) {
+          state.quadView = false;
+          btnQuadView.classList.remove('active');
+          quadOverlay.classList.add('hidden');
+          annotationsLayer.classList.toggle('hidden', !state.showAnnotations);
+        }
+      }
+
+      function updateDirectorDemo(dt) {
+        if (!state.demoActive) return;
+        state.demoElapsed += dt;
+        if (state.demoElapsed >= state.demoDuration) {
+          if (state.isRecording) {
+            stopVideoRecording();
+            stopAutoDemo();
+            return;
+          }
+          state.demoElapsed = 0;
+        }
+
+        const t = state.demoElapsed;
+        const pct = Math.min(100, (t / state.demoDuration) * 100);
+        demoProgressBar.style.width = `${pct.toFixed(1)}%`;
+        demoTimeLabel.textContent = `${t.toFixed(1)}s / ${state.demoDuration.toFixed(1)}s`;
+
+        if (t < 6.5) {
+          // ACT I (0.0s - 6.5s): 2D Flat Blueprint Mandala -> Laser Scan -> 3D Pop-Up Ascension!
+          if (state.theme !== 'prism') applyThemeById('theme-prism');
+          if (state.quadView) {
+            state.quadView = false;
+            btnQuadView.classList.remove('active');
+            quadOverlay.classList.add('hidden');
+            annotationsLayer.classList.toggle('hidden', !state.showAnnotations);
+          }
+          if (state.selectedPart !== 'all') selectSubsystem('all');
+          setExplodeTarget(0);
+
+          if (t < 2.0) {
+            // Hold pure 2D flat blueprint mandala so viewer sees the flat CAD geometry clearly
+            demoActLabel.textContent = 'ACT I // 2D BLUEPRINT MANDALA (2D 平面蓝图图腾态 0%)';
+            setDimensionTarget(0, false);
+            setFanTarget(100);
+            camTargetSpherical.theta = Math.sin(t * 0.8) * 0.06;
+            camTargetSpherical.phi = Math.PI / 2;
+            camTargetSpherical.radius = 18.0;
+            camTargetSpherical.target.set(0, 1.05, 0);
+            scanPlaneMat.opacity = 0;
+          } else {
+            // 2.0s - 6.5s: Sweeping laser plane + smooth 2D -> 3D extrusion & camera orbit
+            const morphP = Math.min(1, (t - 2.0) / 4.2);
+            demoActLabel.textContent = `ACT I // 2D → 3D ASCENSION (激光扫描立体升维 ${Math.round(morphP * 100)}%)`;
+            setDimensionTarget(Math.round(morphP * 100), false);
+            setFanTarget(100);
+            camTargetSpherical.theta = morphP * 0.48;
+            camTargetSpherical.phi = Math.PI / 2 - morphP * 0.34;
+            camTargetSpherical.radius = 18.0 - morphP * 1.0;
+            camTargetSpherical.target.set(0, 1.05 - morphP * 0.2, 0);
+
+            scanLaserPlane.position.y = -2.2 + morphP * 7.8;
+            scanPlaneMat.opacity = Math.sin(morphP * Math.PI) * 0.85;
+          }
+        } else if (t < 11.5) {
+          // ACT II (6.5s - 11.5s): Peacock Train Folding & 180° Full Bloom Choreography (孔雀收拢与180°满屏盛开)
+          scanPlaneMat.opacity = 0;
+          setDimensionTarget(100, false);
+          setExplodeTarget(0);
+          if (state.selectedPart !== 'all') selectSubsystem('all');
+
+          const subT = t - 6.5; // 0..5.0s
+          if (subT < 1.8) {
+            // Fold train inward to show compact sleek silhouette
+            const foldP = 1.0 - (subT / 1.8) * 0.90;
+            setFanTarget(Math.round(foldP * 100));
+            demoActLabel.textContent = `ACT II // TRAIN FOLDING (尾屏气动收拢 ${Math.round(foldP * 180)}°)`;
+            camTargetSpherical.theta = 0.48 + subT * 0.22;
+            camTargetSpherical.phi = 1.16;
+            camTargetSpherical.radius = 16.5;
+          } else {
+            // Dramatic 180-deg full peacock train bloom!
+            const bloomP = Math.min(1, (subT - 1.8) / 2.6);
+            const curFan = 10 + bloomP * 90;
+            setFanTarget(Math.round(curFan));
+            demoActLabel.textContent = `ACT II // 180° PEACOCK TRAIN BLOOM (孔雀开屏盛景 ${Math.round((curFan / 100) * 180)}°)`;
+            camTargetSpherical.theta = 0.88 - bloomP * 0.55;
+            camTargetSpherical.phi = 1.18;
+            camTargetSpherical.radius = 16.8;
+          }
+        } else if (t < 35.5) {
+          // ACT III (11.5s - 35.5s): 24 Seconds -> Sequentially Inspect ALL 12 Subsystems (01 -> 12, 2.0s each!)
+          scanPlaneMat.opacity = 0;
+          setDimensionTarget(100, false);
+          setFanTarget(100);
+
+          const tourElapsed = t - 11.5; // 0..24.0s
+          const idx = Math.min(11, Math.floor(tourElapsed / 2.0));
+          const subStep = (tourElapsed % 2.0) / 2.0; // 0..1 within each part's 2s window
+          const key = PART_KEYS[idx];
+          const info = SUBSYSTEM_INFO[key];
+
+          demoActLabel.textContent = `ACT III // 12-PART TOUR [${info.num}/12] ${info.title}`;
+          if (state.selectedPart !== key) selectSubsystem(key);
+
+          // Progressive exploded view during parts 04..10 so internal core, actuators, and ocelli are crystal clear
+          let expVal = 15;
+          if (idx === 3 || idx === 4) expVal = 45;
+          else if (idx >= 5 && idx <= 8) expVal = 75;
+          else if (idx === 9 || idx === 10) expVal = 95;
+          else if (idx === 11) expVal = 35;
+          setExplodeTarget(expVal);
+
+          // Gentle orbital drift around the focused subsystem's camera offset
+          if (info.camOffset) {
+            camTargetSpherical.theta = info.camOffset.theta + (subStep - 0.5) * 0.28;
+            camTargetSpherical.phi = info.camOffset.phi;
+            camTargetSpherical.radius = info.camOffset.radius;
+          }
+        } else if (t < 41.5) {
+          // ACT IV (35.5s - 41.5s): 100% 12-Part Exploded View + 4 Polychromatic Spectrum Themes Showcase!
+          if (state.selectedPart !== 'all') selectSubsystem('all');
+          const specT = t - 35.5; // 0..6.0s
+          // Explode to 100% in first 3s, then smoothly reassemble to 25%
+          const expWave = specT < 3.0 ? 100 : Math.round(100 - ((specT - 3.0) / 3.0) * 75);
+          setExplodeTarget(expWave);
+          setDimensionTarget(100, false);
+          setFanTarget(100);
+
+          if (specT < 1.5) {
+            if (state.theme !== 'neon') applyThemeById('theme-neon');
+            demoActLabel.textContent = 'ACT IV // SPECTRUM 02/04: CYBER NEON (赛博霓虹紫青 + 100%爆炸拆解)';
+          } else if (specT < 3.0) {
+            if (state.theme !== 'cloisonne') applyThemeById('theme-cloisonne');
+            demoActLabel.textContent = 'ACT IV // SPECTRUM 03/04: CLOISONNÉ JADE (故宫掐丝珐琅翠金)';
+          } else if (specT < 4.5) {
+            if (state.theme !== 'phoenix') applyThemeById('theme-phoenix');
+            demoActLabel.textContent = 'ACT IV // SPECTRUM 04/04: SOLAR PHOENIX (日曜赤金流火)';
+          } else {
+            if (state.theme !== 'prism') applyThemeById('theme-prism');
+            demoActLabel.textContent = 'ACT IV // SPECTRUM 01/04: PRISM AURORA (幻彩极光琉璃重组)';
+          }
+
+          camTargetSpherical.theta = -0.55 + specT * 0.26;
+          camTargetSpherical.phi = 1.14;
+          camTargetSpherical.radius = 17.8;
+        } else if (t < 45.5) {
+          // ACT V (41.5s - 45.5s): 4-VIEWS Multi-Viewport CAD Engineering Blueprint Split
+          demoActLabel.textContent = 'ACT V // 4-VIEWPORT CAD BLUEPRINT (四视图全息工程同屏)';
+          setExplodeTarget(20);
+          if (!state.quadView) {
+            state.quadView = true;
+            btnQuadView.classList.add('active');
+            quadOverlay.classList.remove('hidden');
+            annotationsLayer.classList.add('hidden');
+          }
+          camTargetSpherical.theta = 0.35 + (t - 41.5) * 0.22;
+          camTargetSpherical.phi = 1.16;
+          camTargetSpherical.radius = 17.2;
+        } else {
+          // ACT VI (45.5s - 48.0s): Grand Finale Reassembly & Full 180° Blooming Hero Pose
+          demoActLabel.textContent = 'ACT VI // GRAND FINALE: PAVO PRISMATICA FULL BLOOM';
+          if (state.quadView) {
+            state.quadView = false;
+            btnQuadView.classList.remove('active');
+            quadOverlay.classList.add('hidden');
+            annotationsLayer.classList.toggle('hidden', !state.showAnnotations);
+          }
+          if (state.selectedPart !== 'all') selectSubsystem('all');
+          setDimensionTarget(100, false);
+          setFanTarget(100);
+          setExplodeTarget(0);
+          camTargetSpherical.theta = 0.42;
+          camTargetSpherical.phi = 1.18;
+          camTargetSpherical.radius = 17.2;
+        }
+      }
+
+      // ==========================================
+      // 11. VIDEO RECORDER & 4:3 / 3:4 COVER GENERATOR
+      // ==========================================
+      const recCanvas = document.createElement('canvas');
+      const recCtx = recCanvas.getContext('2d');
+      let mediaRecorder = null;
+      let recordedChunks = [];
+
+      function fillWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
+        const chars = Array.from(text);
+        let line = '';
+        let curY = y;
+        for (let i = 0; i < chars.length; i++) {
+          const testLine = line + chars[i];
+          if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
+            ctx.fillText(line, x, curY);
+            line = chars[i];
+            curY += lineHeight;
+          } else {
+            line = testLine;
+          }
+        }
+        if (line.length > 0) {
+          ctx.fillText(line, x, curY);
+          curY += lineHeight;
+        }
+        return curY;
+      }
+
+      function drawHUDCompositeOnto(ctx, w, h, cam, titleSubtext) {
+        const scale = Math.min(w / 1280, h / 720);
+        const pad = Math.round(18 * scale);
+        const panelBg = 'rgba(8, 15, 32, 0.86)';
+
+        ctx.save();
+        // 1. Project & Draw all 12 Callout Pins (when in single-view 3D mode)
+        if (!state.quadView && state.showAnnotations) {
+          const vProj = new THREE.Vector3();
+          calloutDefs.forEach((def) => {
+            const info = SUBSYSTEM_INFO[def.key];
+            def.anchorObj.getWorldPosition(vProj);
+            vProj.add(def.offset);
+            vProj.project(cam);
+            if (vProj.z <= 1) {
+              const sx = (vProj.x * 0.5 + 0.5) * w;
+              const sy = (-vProj.y * 0.5 + 0.5) * h;
+              const isSel = (state.selectedPart === def.key);
+
+              ctx.beginPath();
+              ctx.arc(sx, sy, (isSel ? 7.5 : 4.5) * scale, 0, Math.PI * 2);
+              ctx.fillStyle = isSel ? '#fbbf24' : info.color;
+              ctx.fill();
+
+              if (isSel) {
+                ctx.beginPath();
+                ctx.arc(sx, sy, 14 * scale, 0, Math.PI * 2);
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+              }
+
+              ctx.font = `600 ${Math.round(9.5 * scale)}px "JetBrains Mono", "Microsoft YaHei", sans-serif`;
+              const txt = `${def.num} ${def.label}`;
+              const tw = ctx.measureText(txt).width + Math.round(14 * scale);
+              const th = Math.round(19 * scale);
+              const bx = Math.min(w - tw - 10, Math.max(10, sx + Math.round(10 * scale)));
+              const by = Math.min(h - th - 10, Math.max(10, sy - Math.round(9 * scale)));
+
+              ctx.fillStyle = isSel ? 'rgba(251, 191, 36, 0.30)' : panelBg;
+              ctx.strokeStyle = isSel ? '#fbbf24' : info.color;
+              ctx.lineWidth = isSel ? 2.0 : 1.0;
+              ctx.fillRect(bx, by, tw, th);
+              ctx.strokeRect(bx, by, tw, th);
+
+              ctx.fillStyle = isSel ? '#fbbf24' : info.color;
+              ctx.fillText(def.num, bx + Math.round(5 * scale), by + Math.round(13.5 * scale));
+              ctx.fillStyle = '#f8fafc';
+              ctx.fillText(def.label, bx + Math.round(22 * scale), by + Math.round(13.5 * scale));
+            }
+          });
+        }
+
+        // 2. If 4-VIEWS mode is active, draw quadrant crosshairs & labels
+        if (state.quadView) {
+          ctx.strokeStyle = 'rgba(34, 211, 238, 0.55)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(w / 2, 0);
+          ctx.lineTo(w / 2, h);
+          ctx.moveTo(0, h / 2);
+          ctx.lineTo(w, h / 2);
+          ctx.stroke();
+
+          ctx.font = `600 ${Math.round(10 * scale)}px "JetBrains Mono", monospace`;
+          ctx.fillStyle = '#22d3ee';
+          ctx.fillText('VIEW 01 // 3D PRISM PERSPECTIVE', pad + Math.round(310 * scale), pad + Math.round(24 * scale));
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText('VIEW 02 // 2D DORSAL MANDALA (TOP)', w / 2 + Math.round(16 * scale), pad + Math.round(64 * scale));
+          ctx.fillStyle = '#10b981';
+          ctx.fillText('VIEW 03 // ANTERIOR TRAIN FAN', pad + Math.round(310 * scale), h / 2 + Math.round(24 * scale));
+          ctx.fillStyle = '#a855f7';
+          ctx.fillText('VIEW 04 // LATERAL KINEMATIC PROFILE', w / 2 + Math.round(16 * scale), h / 2 + Math.round(24 * scale));
+        }
+
+        // 3. Top-Left Title Box
+        const boxW = Math.round(390 * scale);
+        const boxH = Math.round(76 * scale);
+        ctx.fillStyle = panelBg;
+        ctx.strokeStyle = '#22d3ee';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(pad, pad, boxW, boxH);
+        ctx.strokeRect(pad, pad, boxW, boxH);
+
+        ctx.fillStyle = '#22d3ee';
+        ctx.font = `600 ${Math.round(9.5 * scale)}px "JetBrains Mono", monospace`;
+        ctx.fillText('FIG. 15 — 2D⇄3D DIMENSIONAL AUTOMATON | 12 SUBSYSTEMS', pad + Math.round(12 * scale), pad + Math.round(19 * scale));
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = `italic 600 ${Math.round(21 * scale)}px "Cormorant Garamond", "Microsoft YaHei", serif`;
+        ctx.fillText('Pavo Prismatica · 琉璃幻彩机械孔雀', pad + Math.round(12 * scale), pad + Math.round(44 * scale));
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = `400 ${Math.round(9 * scale)}px "JetBrains Mono", monospace`;
+        ctx.fillText('CLOISONNÉ ENAMEL · 19 PRISM OCELLI · GYRO ARMILLARY CORE', pad + Math.round(12 * scale), pad + Math.round(63 * scale));
+
+        // 4. Top-Center Director Progress Banner
+        if (state.demoActive) {
+          const banW = Math.round(440 * scale);
+          const banH = Math.round(44 * scale);
+          const banX = Math.round((w - banW) * 0.55);
+          const banY = pad;
+          ctx.fillStyle = panelBg;
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 1.4;
+          ctx.fillRect(banX, banY, banW, banH);
+          ctx.strokeRect(banX, banY, banW, banH);
+
+          ctx.fillStyle = '#22d3ee';
+          ctx.font = `600 ${Math.round(9.5 * scale)}px "JetBrains Mono", "Microsoft YaHei", sans-serif`;
+          ctx.fillText(titleSubtext || demoActLabel.textContent, banX + Math.round(10 * scale), banY + Math.round(17 * scale));
+
+          ctx.fillStyle = '#fbbf24';
+          const timeStr = `${state.demoElapsed.toFixed(1)}s / ${state.demoDuration.toFixed(1)}s`;
+          ctx.fillText(timeStr, banX + banW - Math.round(78 * scale), banY + Math.round(17 * scale));
+
+          const progRatio = Math.min(1, state.demoElapsed / state.demoDuration);
+          const barW = banW - Math.round(20 * scale);
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.22)';
+          ctx.fillRect(banX + Math.round(10 * scale), banY + Math.round(27 * scale), barW, Math.round(6 * scale));
+          ctx.fillStyle = '#22d3ee';
+          ctx.fillRect(banX + Math.round(10 * scale), banY + Math.round(27 * scale), Math.round(barW * progRatio), Math.round(6 * scale));
+        }
+
+        // 5. Left Dimensional Telemetry + 12-Subsystem Matrix Panel
+        const teleY = pad + boxH + Math.round(10 * scale);
+        const leftW = Math.round(276 * scale);
+        const teleH = Math.round(196 * scale);
+        ctx.fillStyle = panelBg;
+        ctx.strokeStyle = 'rgba(34, 211, 238, 0.45)';
+        ctx.lineWidth = 1.2;
+        ctx.fillRect(pad, teleY, leftW, teleH);
+        ctx.strokeRect(pad, teleY, leftW, teleH);
+
+        ctx.fillStyle = '#22d3ee';
+        ctx.font = `600 ${Math.round(9.5 * scale)}px "JetBrains Mono", monospace`;
+        ctx.fillText('DIMENSIONAL TELEMETRY', pad + Math.round(10 * scale), teleY + Math.round(18 * scale));
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillText(`THEME: ${state.theme.toUpperCase()}`, pad + Math.round(165 * scale), teleY + Math.round(18 * scale));
+
+        const dimText = `${Math.round(state.dimFactor * 100)}% (${state.dimFactor < 0.3 ? '2D' : '3D'})`;
+        const fanText = `${Math.round(state.fanFactor * 180)}°`;
+        const expText = `${Math.round(state.explodeFactor * 100)}%`;
+
+        ctx.font = `600 ${Math.round(10.5 * scale)}px "JetBrains Mono", "Microsoft YaHei", sans-serif`;
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillText(`升维: ${dimText}`, pad + Math.round(10 * scale), teleY + Math.round(38 * scale));
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillText(`开屏: ${fanText}`, pad + Math.round(108 * scale), teleY + Math.round(38 * scale));
+        ctx.fillStyle = '#a855f7';
+        ctx.fillText(`拆解: ${expText}`, pad + Math.round(192 * scale), teleY + Math.round(38 * scale));
+
+        // Draw 12-Part Matrix pills (3 rows x 4 cols)
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = `500 ${Math.round(8.5 * scale)}px "JetBrains Mono", "Microsoft YaHei", sans-serif`;
+        ctx.fillText('12-SUBSYSTEM MATRIX (01 - 12 全部位巡检矩阵):', pad + Math.round(10 * scale), teleY + Math.round(58 * scale));
+
+        const cellW = Math.round(61 * scale);
+        const cellH = Math.round(22 * scale);
+        PART_KEYS.forEach((k, idx) => {
+          const col = idx % 4;
+          const row = Math.floor(idx / 4);
+          const cx = pad + Math.round(10 * scale) + col * (cellW + Math.round(4 * scale));
+          const cy = teleY + Math.round(66 * scale) + row * (cellH + Math.round(5 * scale));
+          const isAct = (state.selectedPart === k);
+          const pInfo = SUBSYSTEM_INFO[k];
+
+          ctx.fillStyle = isAct ? 'rgba(251, 191, 36, 0.34)' : 'rgba(15, 23, 42, 0.78)';
+          ctx.strokeStyle = isAct ? '#fbbf24' : 'rgba(148, 163, 184, 0.3)';
+          ctx.lineWidth = isAct ? 1.6 : 0.8;
+          ctx.fillRect(cx, cy, cellW, cellH);
+          ctx.strokeRect(cx, cy, cellW, cellH);
+
+          ctx.fillStyle = isAct ? '#fbbf24' : '#cbd5e1';
+          ctx.font = `600 ${Math.round(8.2 * scale)}px "JetBrains Mono", "Microsoft YaHei", sans-serif`;
+          ctx.fillText(pInfo.short, cx + Math.round(4 * scale), cy + Math.round(14.5 * scale));
+        });
+
+        // 6. Bottom-Left Subsystem Introduction Card (#inspector-card)
+        const cardY = teleY + teleH + Math.round(10 * scale);
+        const cardH = Math.round(174 * scale);
+        const isPartFocused = state.selectedPart && state.selectedPart !== 'all';
+        ctx.fillStyle = panelBg;
+        ctx.strokeStyle = isPartFocused ? '#fbbf24' : 'rgba(34, 211, 238, 0.5)';
+        ctx.lineWidth = isPartFocused ? 2.0 : 1.3;
+        ctx.fillRect(pad, cardY, leftW, cardH);
+        ctx.strokeRect(pad, cardY, leftW, cardH);
+
+        const pCode = document.getElementById('part-code').textContent;
+        const pTitle = document.getElementById('part-title').textContent;
+        const pDesc = document.getElementById('part-desc').textContent;
+        const pMat = document.getElementById('part-material').textContent;
+
+        ctx.fillStyle = '#22d3ee';
+        ctx.font = `600 ${Math.round(9.5 * scale)}px "JetBrains Mono", monospace`;
+        ctx.fillText(pCode, pad + Math.round(10 * scale), cardY + Math.round(19 * scale));
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = `600 ${Math.round(14 * scale)}px "Inter", "Microsoft YaHei", sans-serif`;
+        ctx.fillText(pTitle, pad + Math.round(10 * scale), cardY + Math.round(41 * scale));
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = `400 ${Math.round(10 * scale)}px "Inter", "Microsoft YaHei", sans-serif`;
+        fillWrappedText(ctx, pDesc, pad + Math.round(10 * scale), cardY + Math.round(62 * scale), leftW - Math.round(20 * scale), Math.round(15.5 * scale));
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = `500 ${Math.round(9 * scale)}px "JetBrains Mono", monospace`;
+        ctx.fillText(`TECH: ${pMat}`, pad + Math.round(10 * scale), cardY + cardH - Math.round(11 * scale));
+        ctx.restore();
+      }
+
+      const btnRecVideo = document.getElementById('btn-rec-video');
+      const recBtnLabel = document.getElementById('rec-btn-label');
+      const recToast = document.getElementById('rec-toast');
+      const recToastText = document.getElementById('rec-toast-text');
+
+      function startVideoRecording() {
+        if (state.isRecording) return;
+        try {
+          const w = renderer.domElement.width;
+          const h = renderer.domElement.height;
+          recCanvas.width = w;
+          recCanvas.height = h;
+          const stream = recCanvas.captureStream(60);
+          const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
+          let selectedMime = '';
+          for (const m of mimeTypes) {
+            if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) {
+              selectedMime = m;
+              break;
+            }
+          }
+          recordedChunks = [];
+          mediaRecorder = selectedMime
+            ? new MediaRecorder(stream, { mimeType: selectedMime, videoBitsPerSecond: 8000000 })
+            : new MediaRecorder(stream);
+
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+          };
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: selectedMime || 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const ext = (selectedMime && selectedMime.includes('mp4')) ? 'mp4' : 'webm';
+            a.href = url;
+            a.download = `pavo_prismatica_3d_demo.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            recToastText.textContent = 'VIDEO EXPORTED: pavo_prismatica_3d_demo.' + ext;
+            setTimeout(() => recToast.classList.add('hidden'), 3500);
+          };
+
+          state.isRecording = true;
+          mediaRecorder.start(100);
+          btnRecVideo.classList.add('active');
+          recBtnLabel.textContent = 'STOP & SAVE';
+          recToast.classList.remove('hidden');
+          recToastText.textContent = 'RECORDING 48s FULL-FEATURE SHOWREEL (2D⇄3D + 开屏 + 12部位 + 4色光谱)...';
+          if (!state.demoActive) startAutoDemo();
+        } catch (err) {
+          recToast.classList.remove('hidden');
+          recToastText.textContent = 'RECORDING UNAVAILABLE IN THIS CONTEXT';
+          setTimeout(() => recToast.classList.add('hidden'), 3000);
+        }
+      }
+
+      function stopVideoRecording() {
+        if (!state.isRecording) return;
+        state.isRecording = false;
+        btnRecVideo.classList.remove('active');
+        recBtnLabel.textContent = 'REC VIDEO';
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+      }
+
+      btnRecVideo.addEventListener('click', () => {
+        if (state.isRecording) stopVideoRecording();
+        else startVideoRecording();
+      });
+
+      // 4:3 and 3:4 High-Res Cover Generator & Downloader
+      const coverCanvas = document.createElement('canvas');
+      const coverCtx = coverCanvas.getContext('2d');
+      const coverModal = document.getElementById('cover-modal');
+      const previewImg4x3 = document.getElementById('preview-img-4x3');
+      const previewImg3x4 = document.getElementById('preview-img-3x4');
+      const placeholder4x3 = document.getElementById('placeholder-4x3');
+      const placeholder3x4 = document.getElementById('placeholder-3x4');
+      const dlLink4x3 = document.getElementById('dl-link-4x3');
+      const dlLink3x4 = document.getElementById('dl-link-3x4');
+
+      document.getElementById('btn-close-cover-modal').addEventListener('click', () => {
+        coverModal.classList.add('hidden');
+      });
+
+      function renderPeacockCover(ratioType) {
+        const is4x3 = (ratioType === '4x3');
+        const cw = is4x3 ? 1600 : 1200;
+        const ch = is4x3 ? 1200 : 1600;
+        coverCanvas.width = cw;
+        coverCanvas.height = ch;
+
+        const prevW = window.innerWidth;
+        const prevH = window.innerHeight;
+        const prevCamPos = mainCamera.position.clone();
+        const prevCamAspect = mainCamera.aspect;
+
+        renderer.setPixelRatio(1);
+        renderer.setSize(cw, ch, false);
+        mainCamera.aspect = cw / ch;
+        mainCamera.updateProjectionMatrix();
+
+        if (is4x3) {
+          mainCamera.position.set(5.2, 3.2, 14.5);
+        } else {
+          mainCamera.position.set(4.5, 3.0, 16.5);
+        }
+        mainCamera.lookAt(new THREE.Vector3(0, 1.15, 0));
+        renderer.setScissorTest(false);
+        renderer.setViewport(0, 0, cw, ch);
+
+        coverCtx.fillStyle = '#050914';
+        coverCtx.fillRect(0, 0, cw, ch);
+        renderer.render(scene, mainCamera);
+        coverCtx.drawImage(renderer.domElement, 0, 0, cw, ch);
+        drawHUDCompositeOnto(coverCtx, cw, ch, mainCamera, '2D⇄3D ASCENSION · 12 SUBSYSTEMS · 19 PRISM OCELLI');
+
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(prevW, prevH);
+        mainCamera.aspect = prevCamAspect;
+        mainCamera.position.copy(prevCamPos);
+        mainCamera.updateProjectionMatrix();
+
+        return coverCanvas.toDataURL('image/png');
+      }
+
+      function triggerDownload(dataUrl, filename) {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      document.getElementById('btn-cover-4x3').addEventListener('click', () => {
+        coverModal.classList.remove('hidden');
+        const url = renderPeacockCover('4x3');
+        previewImg4x3.src = url;
+        previewImg4x3.classList.remove('hidden');
+        placeholder4x3.classList.add('hidden');
+        dlLink4x3.href = url;
+        triggerDownload(url, 'peacock_cover_4x3.png');
+      });
+
+      document.getElementById('btn-cover-3x4').addEventListener('click', () => {
+        coverModal.classList.remove('hidden');
+        const url = renderPeacockCover('3x4');
+        previewImg3x4.src = url;
+        previewImg3x4.classList.remove('hidden');
+        placeholder3x4.classList.add('hidden');
+        dlLink3x4.href = url;
+        triggerDownload(url, 'peacock_cover_3x4.png');
+      });
+
+      // ==========================================
+      // 12. POINTER ORBIT, ZOOM & 3D RAYCASTING
+      // ==========================================
+      let isDragging = false;
+      let dragMoved = false;
+      let prevPointer = { x: 0, y: 0 };
+      const raycaster = new THREE.Raycaster();
+      const pointerNDC = new THREE.Vector2();
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        dragMoved = false;
+        prevPointer.x = e.clientX;
+        prevPointer.y = e.clientY;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+
+        camTargetSpherical.theta -= dx * 0.0065;
+        camTargetSpherical.phi = Math.max(0.10, Math.min(Math.PI - 0.12, camTargetSpherical.phi - dy * 0.0065));
+        prevPointer.x = e.clientX;
+        prevPointer.y = e.clientY;
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (isDragging && !dragMoved && e.target === renderer.domElement) {
+          pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+          pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+          raycaster.setFromCamera(pointerNDC, mainCamera);
+          const hits = raycaster.intersectObjects(interactableMeshes, false);
+          if (hits.length > 0 && hits[0].object.userData.subsystem) {
+            selectSubsystem(hits[0].object.userData.subsystem);
+          }
+        }
+        isDragging = false;
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camTargetSpherical.radius = Math.max(6.0, Math.min(32.0, camTargetSpherical.radius + e.deltaY * 0.01));
+      }, { passive: false });
+
+      window.addEventListener('resize', () => {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        mainCamera.aspect = window.innerWidth / window.innerHeight;
+        mainCamera.updateProjectionMatrix();
+      });
+
+      // ==========================================
+      // 13. REAL-TIME 2D⇄3D MORPH, RAINBOW WAVE & RENDER LOOP
+      // ==========================================
+      const clock = new THREE.Clock();
+      const tempVec = new THREE.Vector3();
+      const tempColor = new THREE.Color();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const dt = Math.min(clock.getDelta(), 0.05);
+
+        updateDirectorDemo(dt);
+
+        // 1. Smoothly interpolate 2D<->3D Dimension, Fan Bloom, and Exploded View
+        state.dimFactor += (state.targetDim - state.dimFactor) * Math.min(1, dt * 6.5);
+        state.fanFactor += (state.targetFan - state.fanFactor) * Math.min(1, dt * 6.5);
+        state.explodeFactor += (state.targetExplode - state.explodeFactor) * Math.min(1, dt * 7.5);
+
+        const dim = state.dimFactor; // 0 = 2D flat blueprint, 1 = 3D pop-up
+        const fan = state.fanFactor;
+        const exp = state.explodeFactor;
+
+        state.simTime += dt * 3.2;
+        const t = state.simTime;
+
+        if (t - lastChimeTime > 2.4) {
+          lastChimeTime = t;
+          playCrystalPulse(660 + Math.round(dim * 220));
+        }
+
+        // 2. Apply 2D<->3D Dimensional Morph + Exploded Offsets across all 12 Subsystems!
+        const lPosAttr = leaderLines.geometry.attributes.position;
+        PART_KEYS.forEach((key, idx) => {
+          const grp = subsystems[key];
+          const p3d = grp.userData.basePos;
+          const p2d = grp.userData.pos2D;
+          const s2d = grp.userData.scale2D;
+          const eVec = grp.userData.explodeVec;
+
+          // Lerp position between 2D Blueprint Plane (Z~0) and 3D Volume + Exploded offset
+          const curX = THREE.MathUtils.lerp(p2d.x, p3d.x, dim) + eVec.x * exp;
+          const curY = THREE.MathUtils.lerp(p2d.y, p3d.y, dim) + eVec.y * exp;
+          const curZ = THREE.MathUtils.lerp(p2d.z, p3d.z, dim) + eVec.z * exp * dim;
+          grp.position.set(curX, curY, curZ);
+
+          // Lerp scale between razor-thin 2D CAD etching and full 3D sculptural volume!
+          grp.scale.set(
+            THREE.MathUtils.lerp(s2d.x, 1.0, dim),
+            THREE.MathUtils.lerp(s2d.y, 1.0, dim),
+            THREE.MathUtils.lerp(s2d.z, 1.0, dim)
+          );
+
+          lPosAttr.setXYZ(idx * 2, p3d.x, p3d.y, p3d.z * dim);
+          lPosAttr.setXYZ(idx * 2 + 1, curX, curY, curZ);
+        });
+        lPosAttr.needsUpdate = true;
+        leaderLines.computeLineDistances();
+        mats.leaderDash.opacity = Math.max(exp * 0.75, (1 - dim) * 0.45);
+
+        // Brighten neon blueprint wireframe lines in 2D mode
+        mats.neonWireCyan.opacity = 0.42 + (1 - dim) * 0.55;
+        mats.neonWireGold.opacity = 0.38 + (1 - dim) * 0.55;
+        mats.neonWireMagenta.opacity = 0.35 + (1 - dim) * 0.55;
+
+        // 3. Animate SYS-04 Gyroscopic Armillary Sphere & Plasma Core
+        gyroRing1.rotation.y = t * 1.1;
+        gyroRing1.rotation.x = Math.sin(t * 0.6) * 0.4 * dim;
+        gyroRing2.rotation.x = t * 1.4 * dim;
+        gyroRing2.rotation.z = t * 0.8;
+        gyroRing3.rotation.z = -t * 1.8;
+        plasmaCoreStar.rotation.y = -t * 2.2;
+        plasmaCoreStar.rotation.x = t * 1.5;
+        const pulseScale = 1.0 + Math.sin(t * 3.0) * 0.14;
+        plasmaCoreStar.scale.setScalar(pulseScale);
+
+        // 4. Animate SYS-03 Mag-Lev Cervical Rings (Traveling wave + 2D->3D lift)
+        neckRings.forEach((nr) => {
+          const wave = Math.sin(t * 2.0 - nr.index * 0.55);
+          nr.group.position.y = nr.baseY + wave * 0.035;
+          nr.group.rotation.y = wave * 0.25;
+        });
+
+        // 5. Animate SYS-05 Cloisonné Lotus Carapace & SYS-06 Origami Wings
+        lotusPetals.forEach((p, idx) => {
+          const breathe = Math.sin(t * 1.8 + idx * 0.7) * 0.08 * dim;
+          p.scale.setScalar(1.0 + breathe);
+        });
+
+        origamiWingPivots.forEach((w) => {
+          // In 2D mode, wings spread flat in XY plane; in 3D mode, they angle out and flap gracefully
+          const flap = Math.sin(t * 1.6) * 0.22 * dim;
+          w.root.rotation.y = w.side * (-0.45 * dim + flap);
+          w.root.rotation.z = w.side * (0.18 * (1 - dim) + flap * 0.5);
+        });
+
+        // 6. Animate SYS-08, SYS-09, SYS-10 Peacock Train Fan Blooming (0° <-> 180°) & 3D Dome Curvature
+        innerPlumePivots.forEach((p, idx) => {
+          p.rotation.z = p.userData.maxAngle * fan;
+          // In 3D mode, inner plumes arch forward in Z to create multi-layer depth
+          p.rotation.x = (0.16 + Math.sin(t * 1.5 + idx * 0.4) * 0.04) * dim;
+        });
+
+        outerPlumePivots.forEach((p, idx) => {
+          p.rotation.z = p.userData.maxAngle * fan;
+          p.rotation.x = (-0.06 + Math.abs(p.userData.norm) * 0.18 + Math.sin(t * 1.2 + idx * 0.35) * 0.03) * dim;
+        });
+
+        ocelliNodes.forEach((node, idx) => {
+          node.pivot.rotation.z = node.pivot.userData.maxAngle * fan;
+          node.pivot.rotation.x = (-0.04 + Math.sin(t * 1.2 + idx * 0.35) * 0.03) * dim;
+          // Ocelli gems spin and pop out along Z in 3D mode!
+          node.gem.rotation.y = t * 2.4 + idx * 0.5;
+          node.gem.position.z = 0.18 * dim;
+          node.midHalo.rotation.z = -t * 1.5;
+        });
+
+        // 7. Animate SYS-11 Tesla Coils & SYS-12 Astrolabe Base (Flips 90° in 2D mode to become a giant Mandala backdrop!)
+        teslaCoils.forEach((tc) => {
+          tc.pod.position.y = Math.sin(t * 1.8 + tc.side) * 0.12;
+          tc.emitter.rotation.y = t * 3.0;
+        });
+
+        // When dimFactor = 0 (2D mode), astrolabe tilts up to face the front camera like a 2D sacred geometry mandala!
+        astrolabePlatform.rotation.x = (1 - dim) * (Math.PI / 2);
+        astrolabePlatform.position.y = THREE.MathUtils.lerp(1.65, -0.88, dim);
+        astrolabeRings.forEach((r, idx) => {
+          r.rotation.z = t * (idx % 2 === 0 ? 0.25 : -0.35);
+        });
+
+        // 8. Camera Spherical Orbit & Smooth Damping
+        if (state.autoOrbit && !isDragging) {
+          camTargetSpherical.theta += dt * 0.32;
+        }
+        camSpherical.radius += (camTargetSpherical.radius - camSpherical.radius) * 0.08;
+        camSpherical.theta += (camTargetSpherical.theta - camSpherical.theta) * 0.08;
+        camSpherical.phi += (camTargetSpherical.phi - camSpherical.phi) * 0.08;
+        camSpherical.target.lerp(camTargetSpherical.target, 0.08);
+
+        const sinPhi = Math.sin(camSpherical.phi);
+        mainCamera.position.set(
+          camSpherical.target.x + camSpherical.radius * sinPhi * Math.sin(camSpherical.theta),
+          camSpherical.target.y + camSpherical.radius * Math.cos(camSpherical.phi),
+          camSpherical.target.z + camSpherical.radius * sinPhi * Math.cos(camSpherical.theta)
+        );
+        mainCamera.lookAt(camSpherical.target);
+
+        // 9. Render Single View or 4-VIEWS Split
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+
+        if (!state.quadView) {
+          renderer.setScissorTest(false);
+          renderer.setViewport(0, 0, w, h);
+          renderer.render(scene, mainCamera);
+
+          if (state.showAnnotations) {
+            calloutElements.forEach(({ def, el }) => {
+              def.anchorObj.getWorldPosition(tempVec);
+              tempVec.add(def.offset);
+              tempVec.project(mainCamera);
+              if (tempVec.z > 1) {
+                el.style.opacity = '0';
+              } else {
+                const sx = (tempVec.x * 0.5 + 0.5) * w;
+                const sy = (-tempVec.y * 0.5 + 0.5) * h;
+                el.style.left = `${sx}px`;
+                el.style.top = `${sy}px`;
+                el.style.opacity = '1';
+              }
+            });
+          }
+        } else {
+          renderer.setScissorTest(true);
+          const halfW = Math.floor(w / 2);
+          const halfH = Math.floor(h / 2);
+          const subAspect = halfW / halfH;
+
+          mainCamera.aspect = subAspect;
+          mainCamera.updateProjectionMatrix();
+          renderer.setViewport(0, halfH, halfW, halfH);
+          renderer.setScissor(0, halfH, halfW, halfH);
+          renderer.render(scene, mainCamera);
+
+          topCamera.aspect = subAspect;
+          topCamera.updateProjectionMatrix();
+          topCamera.position.set(0, 20.0, 0);
+          topCamera.lookAt(0, 0.8, 0);
+          renderer.setViewport(halfW, halfH, w - halfW, halfH);
+          renderer.setScissor(halfW, halfH, w - halfW, halfH);
+          renderer.render(scene, topCamera);
+
+          frontCamera.aspect = subAspect;
+          frontCamera.updateProjectionMatrix();
+          frontCamera.position.set(0, 1.2, 17.5);
+          frontCamera.lookAt(0, 1.0, 0);
+          renderer.setViewport(0, 0, halfW, halfH);
+          renderer.setScissor(0, 0, halfW, halfH);
+          renderer.render(scene, frontCamera);
+
+          sideCamera.aspect = subAspect;
+          sideCamera.updateProjectionMatrix();
+          sideCamera.position.set(17.5, 1.2, 0);
+          sideCamera.lookAt(0, 1.0, 0);
+          renderer.setViewport(halfW, 0, w - halfW, halfH);
+          renderer.setScissor(halfW, 0, w - halfW, halfH);
+          renderer.render(scene, sideCamera);
+
+          mainCamera.aspect = w / h;
+          mainCamera.updateProjectionMatrix();
+        }
+
+        if (state.isRecording) {
+          recCtx.drawImage(renderer.domElement, 0, 0, renderer.domElement.width, renderer.domElement.height);
+          drawHUDCompositeOnto(recCtx, renderer.domElement.width, renderer.domElement.height, mainCamera, demoActLabel.textContent);
+        }
+      }
+
+      animate();
+    })();
+  </script>
+</body>
+</html>

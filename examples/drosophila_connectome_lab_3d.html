@@ -1,0 +1,3678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FIG. 18 — DROSOPHILA CONNECTOME × FLYBODY LAB | FlyWire 139K Neurons &amp; MuJoCo 59-DoF</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Import Map for Latest Three.js r186 (v0.186.1) ES Module + Addons -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #040812;
+      --bg-panel: rgba(7, 14, 28, 0.84);
+      --border-line: rgba(251, 191, 36, 0.38);
+      --border-subtle: rgba(148, 163, 184, 0.18);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-gold: #fbbf24;
+      --accent-cyan: #22d3ee;
+      --accent-emerald: #10b981;
+      --accent-violet: #a855f7;
+      --accent-rose: #f43f5e;
+      --grid-color: rgba(34, 211, 238, 0.07);
+    }
+    body.theme-mujoco {
+      --bg-primary: #031014;
+      --bg-panel: rgba(5, 22, 28, 0.84);
+      --border-line: rgba(16, 185, 129, 0.42);
+      --border-subtle: rgba(34, 211, 238, 0.20);
+      --text-main: #ecfeff;
+      --text-muted: #67e8f9;
+      --accent-gold: #a3e635;
+      --accent-cyan: #22d3ee;
+      --grid-color: rgba(16, 185, 129, 0.08);
+    }
+    body.theme-biolum {
+      --bg-primary: #090415;
+      --bg-panel: rgba(18, 8, 34, 0.84);
+      --border-line: rgba(232, 121, 249, 0.42);
+      --border-subtle: rgba(168, 85, 247, 0.22);
+      --text-main: #fdf4ff;
+      --text-muted: #d8b4fe;
+      --accent-gold: #f43f5e;
+      --accent-cyan: #38bdf8;
+      --grid-color: rgba(232, 121, 249, 0.08);
+    }
+    body.theme-nature {
+      --bg-primary: #0c1017;
+      --bg-panel: rgba(17, 24, 39, 0.86);
+      --border-line: rgba(245, 158, 11, 0.42);
+      --border-subtle: rgba(203, 213, 225, 0.20);
+      --text-main: #f8fafc;
+      --text-muted: #cbd5e1;
+      --accent-gold: #f59e0b;
+      --accent-cyan: #38bdf8;
+      --grid-color: rgba(245, 158, 11, 0.07);
+    }
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      transition: background-color 0.4s ease, color 0.3s ease;
+    }
+    .font-serif-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .blueprint-grid {
+      background-image:
+        linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+      background-size: 36px 36px;
+    }
+    .hud-panel {
+      background: var(--bg-panel);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-line);
+      transition: all 0.28s ease;
+    }
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      transition: all 0.18s ease;
+      cursor: pointer;
+    }
+    .hud-btn:hover {
+      border-color: var(--accent-cyan);
+      color: var(--text-main);
+      background: rgba(34, 211, 238, 0.14);
+    }
+    .hud-btn.active {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.25), rgba(168, 85, 247, 0.25));
+      border-color: var(--accent-cyan);
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(34, 211, 238, 0.25);
+    }
+    .hud-btn.active-gold {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.30), rgba(244, 63, 94, 0.24));
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+      box-shadow: 0 0 14px rgba(251, 191, 36, 0.30);
+    }
+    input[type="range"].mech-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      background: linear-gradient(90deg, #22d3ee, #10b981, #fbbf24, #f43f5e);
+      border-radius: 3px;
+      outline: none;
+      opacity: 0.90;
+    }
+    input[type="range"].mech-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid var(--accent-gold);
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.9);
+      transition: transform 0.15s ease;
+    }
+    input[type="range"].mech-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    .callout-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .callout-pin.active-pin {
+      transform: translate(-50%, -50%) scale(1.15);
+      z-index: 30;
+    }
+    .callout-pin.active-pin .pin-tag {
+      border-color: #fbbf24 !important;
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.36), rgba(244, 63, 94, 0.30)) !important;
+      box-shadow: 0 0 18px rgba(251, 191, 36, 0.55);
+      opacity: 1 !important;
+    }
+    .callout-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid #040812;
+      position: relative;
+    }
+    .callout-dot::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 1.5px solid currentColor;
+      opacity: 0.65;
+      animation: pulseRing 2.0s infinite;
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.8); opacity: 0.85; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    .corner-bracket {
+      position: relative;
+    }
+    .corner-bracket::before,
+    .corner-bracket::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      pointer-events: none;
+    }
+    .corner-bracket::before {
+      top: -1px;
+      left: -1px;
+      border-top: 2px solid var(--accent-cyan);
+      border-left: 2px solid var(--accent-cyan);
+    }
+    .corner-bracket::after {
+      bottom: -1px;
+      right: -1px;
+      border-bottom: 2px solid var(--accent-gold);
+      border-right: 2px solid var(--accent-gold);
+    }
+    .part-pill {
+      font-size: 9px;
+      padding: 2px 5px;
+      border-radius: 2px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(15, 23, 42, 0.68);
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .part-pill:hover {
+      border-color: var(--accent-cyan);
+      color: #fff;
+    }
+    .part-pill.active {
+      border-color: var(--accent-gold);
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.32), rgba(168, 85, 247, 0.30));
+      color: #fff;
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
+    }
+    .sudoku-mini-cell {
+      width: 18px;
+      height: 18px;
+      font-size: 9.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .sudoku-mini-cell.clue {
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.7);
+    }
+    .sudoku-mini-cell.solved {
+      color: #fbbf24;
+      background: rgba(251, 191, 36, 0.16);
+      font-weight: 700;
+    }
+    .sudoku-mini-cell.active-target {
+      color: #ffffff;
+      background: rgba(34, 211, 238, 0.45);
+      border-color: #22d3ee;
+      box-shadow: 0 0 8px #22d3ee;
+      font-weight: 700;
+    }
+
+    /* Native layout fallbacks in case Tailwind CDN is slow or blocked */
+    .fixed { position: fixed; }
+    .absolute { position: absolute; }
+    .relative { position: relative; }
+    .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+    .inset-x-0 { left: 0; right: 0; }
+    .inset-y-0 { top: 0; bottom: 0; }
+    .top-0 { top: 0; }
+    .bottom-0 { bottom: 0; }
+    .left-2\.5 { left: 0.625rem; }
+    .right-2\.5 { right: 0.625rem; }
+    .top-24 { top: 6rem; }
+    .w-full { width: 100%; }
+    .h-full { height: 100%; }
+    .z-0 { z-index: 0; }
+    .z-10 { z-index: 10; }
+    .z-20 { z-index: 20; }
+    .z-30 { z-index: 30; }
+    .z-40 { z-index: 40; }
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .grid { display: grid; }
+    .flex-col { flex-direction: column; }
+    .flex-wrap { flex-wrap: wrap; }
+    .items-center { align-items: center; }
+    .items-start { align-items: flex-start; }
+    .items-end { align-items: flex-end; }
+    .justify-between { justify-content: space-between; }
+    .justify-center { justify-content: center; }
+    .pointer-events-none { pointer-events: none; }
+    .pointer-events-auto { pointer-events: auto; }
+    .overflow-hidden { overflow: hidden; }
+    .overflow-y-auto { overflow-y: auto; }
+    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid-cols-9 { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+    .grid-cols-10 { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+  </style>
+</head>
+<body class="blueprint-grid">
+  <!-- WebGL 3D Canvas Container -->
+  <div id="canvas-container" class="fixed inset-0 w-full h-full z-0"></div>
+
+  <!-- 4-View Split Overlay Lines & Labels -->
+  <div id="quad-overlay" class="fixed inset-0 pointer-events-none z-10 hidden">
+    <div class="absolute inset-y-0 left-1/2 w-px" style="background: var(--border-line);"></div>
+    <div class="absolute inset-x-0 top-1/2 h-px" style="background: var(--border-line);"></div>
+    <div class="absolute top-20 left-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-cyan);">VIEW 01 // 3D EMBODIED ARENA &amp; CONNECTOME</div>
+    <div class="absolute top-20 left-1/2 ml-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-gold);">VIEW 02 // DORSAL SUDOKU &amp; CONNECTOME PLAN</div>
+    <div class="absolute top-1/2 mt-3 left-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-emerald);">VIEW 03 // ANTERIOR BRAIN &amp; RUBIK MANIPULATION</div>
+    <div class="absolute top-1/2 mt-3 left-1/2 ml-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-violet);">VIEW 04 // LATERAL 59-DoF KINEMATIC PROFILE</div>
+  </div>
+
+  <!-- 3D Dynamic Annotation Layer (12 Pins) -->
+  <div id="annotations-layer" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+  <!-- Director Auto-Demo Progress Banner (120s / 02:00 Interactive Timeline & Chapter Jump) -->
+  <div id="demo-banner" class="fixed top-20 left-1/2 -translate-x-1/2 z-30 pointer-events-auto hidden">
+    <div class="hud-panel corner-bracket px-4 py-2.5 rounded-sm flex flex-col items-center gap-1.5 min-w-[330px] sm:min-w-[540px]">
+      <div class="w-full flex items-center justify-between font-mono-tech text-[10px] tracking-wider uppercase gap-2">
+        <span id="demo-act-label" class="truncate" style="color: var(--accent-cyan);">ACT I // FLYWIRE 138,639-NEURON SUDOKU SOLVER</span>
+        <span id="demo-time-label" class="whitespace-nowrap font-bold" style="color: var(--accent-gold);">00:00.0 / 02:00.0 (120s)</span>
+      </div>
+      <!-- Interactive Timeline Scrubber + Progress Bar -->
+      <div class="w-full relative flex items-center">
+        <div class="w-full h-1.5 bg-slate-900/90 rounded overflow-hidden pointer-events-none">
+          <div id="demo-progress-bar" class="h-full transition-all duration-75" style="width: 0%; background: linear-gradient(90deg, #22d3ee, #10b981, #fbbf24, #f43f5e);"></div>
+        </div>
+        <input id="demo-scrubber" type="range" min="0" max="120" step="0.1" value="0" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title="拖动进度条可自由跳转 120 秒演示时间轴" />
+      </div>
+      <!-- 6-Act Quick Jump Chapter Pills -->
+      <div class="w-full grid grid-cols-6 gap-1 font-mono-tech text-[8.5px] pt-0.5">
+        <button id="btn-act-1" class="hud-btn py-0.5 px-1 rounded-sm text-center truncate" title="跳转第I幕 (00:00 - 00:12): 2D连接组图谱→3D具身升维">I.2D→3D升维</button>
+        <button id="btn-act-2" class="hud-btn py-0.5 px-1 rounded-sm text-center truncate" title="跳转第II幕 (00:12 - 00:36): FlyWire脑脉冲解9x9数独(69/51/36线索)">II.脑脉冲数独</button>
+        <button id="btn-act-3" class="hud-btn py-0.5 px-1 rounded-sm text-center truncate" title="跳转第III幕 (00:36 - 01:04): 六足抓握打乱与还原魔方(2整局)+220Hz飞行">III.魔方&amp;飞行</button>
+        <button id="btn-act-4" class="hud-btn py-0.5 px-1 rounded-sm text-center truncate" title="跳转第IV幕 (01:04 - 01:40): 01-12全部位深度特写巡检(每部位3秒)">IV.12部位巡检</button>
+        <button id="btn-act-5" class="hud-btn py-0.5 px-1 rounded-sm text-center truncate" title="跳转第V幕 (01:40 - 01:52): 100%爆炸拆解+4色主题+四视图蓝图">V.爆炸&amp;四视图</button>
+        <button id="btn-act-6" class="hud-btn py-0.5 px-1 rounded-sm text-center truncate" title="跳转第VI幕 (01:52 - 02:00): 全机重组归位与全景终章">VI.终章总览</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recording Toast -->
+  <div id="rec-toast" class="fixed top-36 left-1/2 -translate-x-1/2 z-30 pointer-events-none hidden">
+    <div class="hud-panel px-3.5 py-1.5 rounded-sm font-mono-tech text-[11px] flex items-center gap-2 border" style="border-color: var(--accent-gold); color: var(--text-main);">
+      <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+      <span id="rec-toast-text">RECORDING 60FPS WEBGL STREAM...</span>
+    </div>
+  </div>
+
+  <!-- Cover Studio Floating Modal -->
+  <div id="cover-modal" class="fixed right-3 sm:right-5 top-24 z-40 w-72 sm:w-80 hud-panel corner-bracket p-3.5 rounded-sm pointer-events-auto hidden">
+    <div class="flex items-center justify-between border-b pb-1.5 mb-2.5" style="border-color: var(--border-subtle);">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="font-mono-tech text-[10px] tracking-wider uppercase" style="color: var(--accent-gold);">COVER STUDIO // 4:3 &amp; 3:4 封面直出</span>
+      </div>
+      <button id="btn-close-cover-modal" class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded hover:bg-white/10" style="color: var(--text-muted);">✕</button>
+    </div>
+    <p id="cover-status-msg" class="text-[11px] mb-2.5 leading-snug" style="color: var(--text-main);">
+      已渲染高清实验封面！点击下方按钮即可保存 PNG：
+    </p>
+    <div class="grid grid-cols-2 gap-2.5 items-start">
+      <div class="flex flex-col gap-1.5">
+        <div class="relative rounded overflow-hidden border bg-slate-950/80 aspect-[4/3] flex items-center justify-center" style="border-color: var(--border-line);">
+          <img id="preview-img-4x3" alt="4:3 横版封面预览" class="w-full h-full object-cover hidden" />
+          <span id="placeholder-4x3" class="font-mono-tech text-[9px]" style="color: var(--text-muted);">4:3 准备就绪</span>
+        </div>
+        <a id="dl-link-4x3" download="drosophila_lab_cover_4x3.png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" class="hud-btn active font-mono-tech text-[10px] py-1.5 px-2 rounded-sm text-center block">
+          ⬇ 保存横封面 (4:3)
+        </a>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <div class="relative rounded overflow-hidden border bg-slate-950/80 aspect-[3/4] flex items-center justify-center" style="border-color: var(--border-line);">
+          <img id="preview-img-3x4" alt="3:4 竖版封面预览" class="w-full h-full object-cover hidden" />
+          <span id="placeholder-3x4" class="font-mono-tech text-[9px]" style="color: var(--text-muted);">3:4 准备就绪</span>
+        </div>
+        <a id="dl-link-3x4" download="drosophila_lab_cover_3x4.png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" class="hud-btn active font-mono-tech text-[10px] py-1.5 px-2 rounded-sm text-center block">
+          ⬇ 保存竖封面 (3:4)
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Engineering Header Bar -->
+  <header class="fixed top-0 inset-x-0 z-20 p-2.5 sm:p-3.5 flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+    <div class="hud-panel corner-bracket px-3.5 py-2 rounded-sm pointer-events-auto max-w-lg">
+      <div class="flex flex-wrap items-center gap-2 font-mono-tech text-[9.5px] tracking-[0.14em] uppercase" style="color: var(--accent-cyan);">
+        <span>FIG. 18 — EMBODIED DROSOPHILA SIMULATOR</span>
+        <span class="opacity-40">|</span>
+        <span style="color: var(--accent-gold);">138,639 NEURONS × 59-DoF</span>
+        <span id="engine-version-badge" class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[8.5px]">ENGINE: THREE.JS r186 (v0.186.1 LATEST)</span>
+      </div>
+      <div class="flex items-baseline gap-2.5 mt-0.5">
+        <h1 class="font-serif-title italic text-lg sm:text-2xl font-semibold tracking-wide bg-gradient-to-r from-amber-300 via-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+          FlyWire × flybody · 具身果蝇脑连接组与物理实验室
+        </h1>
+        <span id="lab-mode-badge" class="font-mono-tech text-[9px] px-1.5 py-0.5 rounded border" style="border-color: var(--border-line); color: var(--accent-gold);">SUDOKU + RUBIK</span>
+      </div>
+      <p class="font-mono-tech text-[9px] tracking-wider uppercase mt-0.5" style="color: var(--text-muted);">
+        POST 01 (@smjain): FLYWIRE v783 9×9 SUDOKU SPIKES · POST 02 (@nice11018): DEEPMIND MUJOCO 59-DoF &amp; OMMATIDIA VISION
+      </p>
+    </div>
+
+    <!-- Top Right Controls -->
+    <div class="flex flex-wrap items-center gap-1.5 pointer-events-auto">
+      <div class="hud-panel px-2 py-1 rounded-sm flex items-center gap-1">
+        <span class="font-mono-tech text-[9px] tracking-wider uppercase mr-0.5" style="color: var(--text-muted);">THEME:</span>
+        <button id="theme-flywire" class="hud-btn active-gold font-mono-tech text-[9px] px-2 py-1 rounded-sm" title="FlyWire 金色神经脉冲主题">FLYWIRE GOLD</button>
+        <button id="theme-mujoco" class="hud-btn font-mono-tech text-[9px] px-2 py-1 rounded-sm" title="DeepMind MuJoCo 物理网格主题">MUJOCO</button>
+        <button id="theme-biolum" class="hud-btn font-mono-tech text-[9px] px-2 py-1 rounded-sm" title="荧光多巴胺突触主题">SYNAPSE</button>
+        <button id="theme-nature" class="hud-btn font-mono-tech text-[9px] px-2 py-1 rounded-sm" title="Nature 期刊深色手稿主题">NATURE</button>
+      </div>
+
+      <button id="btn-annotations" class="hud-panel hud-btn active font-mono-tech text-[9px] px-2.5 py-1.5 rounded-sm flex items-center gap-1">
+        <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+        <span>12 PINS: ON</span>
+      </button>
+
+      <button id="btn-sound" class="hud-panel hud-btn font-mono-tech text-[9px] px-2.5 py-1.5 rounded-sm flex items-center gap-1">
+        <span id="sound-indicator" class="w-2 h-2 rounded-full bg-slate-500"></span>
+        <span id="sound-label">SPIKE AUDIO: OFF</span>
+      </button>
+
+      <button id="btn-auto-demo" class="hud-panel hud-btn font-mono-tech text-[9px] px-2.5 py-1.5 rounded-sm flex items-center gap-1.5" title="开启120秒(2分钟)全特性大片演示：2D→3D升维 + FlyWire脑脉冲解数独(3阶段) + flybody玩魔方(完整2局)&amp;飞行 + 01-12全部位特写巡检(每部位3秒) + 100%爆炸拆解&amp;四视图">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        <span id="demo-btn-label">AUTO DEMO (120s / 2MIN)</span>
+      </button>
+
+      <button id="btn-rec-video" class="hud-panel hud-btn font-mono-tech text-[9px] px-2.5 py-1.5 rounded-sm flex items-center gap-1.5" title="录制120秒(2分钟)全特性60FPS视频并自动下载（随时可点击停止提前保存）">
+        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+        <span id="rec-btn-label">REC VIDEO (120s)</span>
+      </button>
+
+      <button id="btn-cover-4x3" class="hud-panel hud-btn active-gold font-mono-tech text-[9px] px-2 py-1.5 rounded-sm">
+        ⬇ 横封面 4:3
+      </button>
+      <button id="btn-cover-3x4" class="hud-panel hud-btn active-gold font-mono-tech text-[9px] px-2 py-1.5 rounded-sm">
+        ⬇ 竖封面 3:4
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Column: Telemetry + 12-Subsystem Matrix + Chinese Inspector Card -->
+  <aside class="fixed left-2.5 sm:left-3.5 top-24 sm:top-28 z-20 w-64 sm:w-72 flex flex-col gap-2 pointer-events-none max-h-[calc(100vh-185px)] overflow-y-auto pr-1">
+    <!-- Connectome & 59-DoF Live Telemetry -->
+    <div class="hud-panel corner-bracket p-2.5 rounded-sm pointer-events-auto">
+      <div class="flex items-center justify-between border-b pb-1 mb-1.5" style="border-color: var(--border-subtle);">
+        <span class="font-mono-tech text-[9px] tracking-[0.14em] uppercase" style="color: var(--accent-cyan);">CONNECTOME × MUJOCO TELEMETRY</span>
+        <span id="status-badge" class="font-mono-tech text-[8.5px] px-1.5 py-0.5 rounded bg-amber-500/20" style="color: var(--accent-gold);">40ms SPIKING</span>
+      </div>
+      <div class="grid grid-cols-3 gap-y-1.5 gap-x-2 font-mono-tech text-[11px]">
+        <div>
+          <div class="text-[8px] uppercase" style="color: var(--text-muted);">NEURONS (神经元)</div>
+          <div class="font-semibold" style="color: var(--accent-gold);">138,639</div>
+        </div>
+        <div>
+          <div class="text-[8px] uppercase" style="color: var(--text-muted);">SYNAPSES (突触连接)</div>
+          <div class="font-semibold" style="color: var(--accent-cyan);">15.1M WTD</div>
+        </div>
+        <div>
+          <div class="text-[8px] uppercase" style="color: var(--text-muted);">SPIKE RATE</div>
+          <div id="metric-spikes" class="font-semibold" style="color: var(--accent-emerald);">1,420 Hz</div>
+        </div>
+        <div>
+          <div class="text-[8px] uppercase" style="color: var(--text-muted);">BODY DoF (自由度)</div>
+          <div id="metric-dof" class="font-semibold" style="color: var(--accent-violet);">59 DoF</div>
+        </div>
+        <div>
+          <div class="text-[8px] uppercase" style="color: var(--text-muted);">ADHESION (脚粘附)</div>
+          <div id="metric-adhesion" class="font-semibold" style="color: var(--accent-rose);">4/6 PADS</div>
+        </div>
+        <div>
+          <div class="text-[8px] uppercase" style="color: var(--text-muted);">SUDOKU (无回溯)</div>
+          <div id="metric-sudoku-prog" class="font-semibold" style="color: var(--accent-gold);">69 CLUES</div>
+        </div>
+      </div>
+
+      <!-- 12-Subsystem Quick Matrix -->
+      <div class="mt-2 pt-1.5 border-t" style="border-color: var(--border-subtle);">
+        <div class="flex items-center justify-between font-mono-tech text-[8.5px] mb-1">
+          <span style="color: var(--text-muted);">12-SUBSYSTEM MATRIX (脑区 01-04 · 躯体 05-12):</span>
+          <button id="btn-reset-focus" class="underline text-[8.5px] hidden" style="color: var(--accent-gold);">全机总览 (ALL)</button>
+        </div>
+        <div id="part-matrix-grid" class="grid grid-cols-4 gap-1 font-mono-tech"></div>
+      </div>
+    </div>
+
+    <!-- Selected Subsystem Inspector Card (#inspector-card) -->
+    <div id="inspector-card" class="hud-panel corner-bracket p-2.5 rounded-sm pointer-events-auto">
+      <div class="flex items-center justify-between mb-0.5">
+        <span id="part-code" class="font-mono-tech text-[9px] tracking-widest uppercase" style="color: var(--accent-gold);">SYS-00 // FLYWIRE × FLYBODY LAB</span>
+        <span id="part-badge" class="font-mono-tech text-[8px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">NATURE 2024–2026</span>
+      </div>
+      <h2 id="part-title" class="font-serif-title italic text-base font-semibold leading-tight">果蝇全脑连接组解数独 × 59维物理果蝇</h2>
+      <p id="part-desc" class="text-[10.5px] leading-relaxed mt-1" style="color: var(--text-muted);">
+        融合 @smjain 的「FlyWire 138,639 神经元脉冲解码 9×9 数独」与 @nice11018 介绍的 Google DeepMind / Janelia「flybody 59自由度物理果蝇 + 复眼视觉渲染 + 魔方抓握」。点击 01–12 部位可特写巡检。
+      </p>
+      <div class="mt-1.5 pt-1 border-t flex items-center justify-between font-mono-tech text-[9px]" style="border-color: var(--border-subtle); color: var(--text-muted);">
+        <span>SOURCE: <strong id="part-material" class="font-normal" style="color: var(--text-main);">FlyWire v783 + DeepMind MuJoCo + NeuroMechFly</strong></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Column: Post 2 Rubik's Cube Scramble/Solve Timer + Post 1 Sudoku + Post 2 Ommatidia Vision -->
+  <aside class="fixed right-2.5 sm:right-3.5 top-24 sm:top-28 z-20 w-64 sm:w-72 flex flex-col gap-2 pointer-events-none max-h-[calc(100vh-185px)] overflow-y-auto pl-1">
+    <!-- Post 2 Module A: 3x3 Rubik's Cube Scramble, Solve & Stopwatch Timer -->
+    <div id="rubik-hud-panel" class="hud-panel corner-bracket p-2.5 rounded-sm pointer-events-auto border-cyan-400/70 shadow-[0_0_18px_rgba(34,211,238,0.18)]">
+      <div class="flex items-center justify-between border-b pb-1 mb-1.5" style="border-color: var(--border-subtle);">
+        <span class="font-mono-tech text-[9px] tracking-wider uppercase" style="color: var(--accent-cyan);">POST 02 // 3×3 魔方打乱与还原计时器</span>
+        <span id="rubik-phase-badge" class="font-mono-tech text-[8.5px] px-1.5 py-0.5 rounded bg-rose-500/25 text-rose-300 font-bold">🔀 打乱顺序中 (1/10)</span>
+      </div>
+
+      <!-- Solve Stopwatch & Telemetry Row -->
+      <div class="grid grid-cols-3 gap-1.5 bg-slate-950/90 border border-amber-400/40 rounded-sm p-1.5 mb-1.5 font-mono-tech">
+        <div>
+          <div class="text-[7.5px] uppercase" style="color: var(--text-muted);">本局还原用时</div>
+          <div id="rubik-timer-display" class="text-sm font-bold tracking-tight" style="color: var(--accent-gold);">00.00s</div>
+        </div>
+        <div>
+          <div class="text-[7.5px] uppercase" style="color: var(--text-muted);">平均 / 最佳耗时</div>
+          <div id="rubik-best-display" class="text-[11px] font-semibold mt-0.5" style="color: var(--accent-emerald);">均3.80s / 3.52s</div>
+        </div>
+        <div>
+          <div class="text-[7.5px] uppercase" style="color: var(--text-muted);">脑脉冲+六足拨动</div>
+          <div id="rubik-steps-display" class="text-[11px] font-semibold mt-0.5" style="color: var(--accent-cyan);">0/10步 · 2.6/s</div>
+        </div>
+      </div>
+
+      <!-- Scramble & Inverse Solve Sequence Pills -->
+      <div class="mb-1.5">
+        <div class="flex items-center justify-between font-mono-tech text-[8px] mb-1">
+          <span id="rubik-seq-title" style="color: var(--text-muted);">10步打乱公式 (SCRAMBLE SEQ):</span>
+          <span id="rubik-current-move" class="font-semibold" style="color: var(--accent-gold);">当前动作: R</span>
+        </div>
+        <div id="rubik-move-pills" class="grid grid-cols-10 gap-0.5 font-mono-tech text-[8.5px]"></div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-1 font-mono-tech text-[8.5px]">
+        <button id="btn-rubik-scramble" class="hud-btn active-gold flex-1 py-1 rounded-sm" title="重新随机生成10步打乱顺序并计时还原">🔀 重新打乱并还原</button>
+        <button id="btn-rubik-solve-now" class="hud-btn active px-2 py-1 rounded-sm" title="跳过打乱直接开始计时还原">⚡ 立即还原</button>
+        <button id="btn-rubik-step" class="hud-btn px-2 py-1 rounded-sm" title="单步执行下一拧动动作">⏭ 单步</button>
+      </div>
+    </div>
+    <!-- Post 1 Module: FlyWire 40ms Spike Readout & 9x9 Sudoku Monitor -->
+    <div class="hud-panel corner-bracket p-2.5 rounded-sm pointer-events-auto">
+      <div class="flex items-center justify-between border-b pb-1 mb-1.5" style="border-color: var(--border-subtle);">
+        <span class="font-mono-tech text-[9px] tracking-wider uppercase" style="color: var(--accent-gold);">POST 01 // FLYWIRE 9×9 SUDOKU</span>
+        <span id="sudoku-stage-label" class="font-mono-tech text-[8.5px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">STAGE 1 (69 CLUES)</span>
+      </div>
+
+      <!-- Stage Selector Buttons (69 / 51 / 36 Clues from @smjain's post!) -->
+      <div class="grid grid-cols-3 gap-1 mb-2 font-mono-tech text-[9px]">
+        <button id="btn-stage-69" class="hud-btn active-gold py-1 rounded-sm">69 CLUES</button>
+        <button id="btn-stage-51" class="hud-btn py-1 rounded-sm">51 CLUES</button>
+        <button id="btn-stage-36" class="hud-btn py-1 rounded-sm">36 CLUES</button>
+      </div>
+
+      <!-- Mini 9x9 Sudoku Live Mirror + Spike Decoder -->
+      <div class="flex items-center gap-2.5">
+        <div id="sudoku-mini-grid" class="grid grid-cols-9 border border-amber-400/40 bg-slate-950/90 p-0.5 rounded-sm"></div>
+        <div class="flex-1 flex flex-col justify-between font-mono-tech text-[9px]">
+          <div class="text-[8.5px] uppercase" style="color: var(--accent-cyan);">TRAINED READOUT (40ms):</div>
+          <div id="readout-cell-label" class="text-[10px] font-semibold text-white mt-0.5">CELL (R3, C5) → DIGIT 7</div>
+          <div id="readout-margin-label" class="text-[8.5px] text-amber-300">MARGIN: +34.2% (NO BACKTRACK)</div>
+          <!-- 1-9 Spike Count Histogram Bars -->
+          <div id="spike-bars-container" class="mt-1.5 flex items-end gap-0.5 h-12 border-b border-slate-700 pb-0.5"></div>
+          <div class="flex justify-between text-[7.5px] text-slate-400 mt-0.5">
+            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+          </div>
+          <div class="flex gap-1 mt-1.5">
+            <button id="btn-step-sudoku" class="hud-btn active flex-1 py-1 rounded-sm text-[8.5px]">⚡ 40ms 单步脉冲</button>
+            <button id="btn-reset-sudoku" class="hud-btn px-1.5 py-1 rounded-sm text-[8.5px]" title="重置当前数独棋盘">重置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Post 2 Module: flybody Compound-Eye Vision Input Render (Blue / Yellow-Green Ommatidia) -->
+    <div class="hud-panel corner-bracket p-2.5 rounded-sm pointer-events-auto">
+      <div class="flex items-center justify-between border-b pb-1 mb-1.5" style="border-color: var(--border-subtle);">
+        <span class="font-mono-tech text-[9px] tracking-wider uppercase" style="color: var(--accent-emerald);">POST 02 // OMMATIDIA VISION INPUT</span>
+        <span class="font-mono-tech text-[8px] text-emerald-300">721 HEX LENSES / EYE</span>
+      </div>
+      <div class="relative rounded overflow-hidden border bg-slate-950 flex items-center justify-center" style="border-color: var(--border-line); height: 112px;">
+        <canvas id="ommatidia-canvas" width="260" height="112" class="w-full h-full block"></canvas>
+        <div class="absolute bottom-1 left-1.5 right-1.5 flex justify-between font-mono-tech text-[8px] text-cyan-200/90 pointer-events-none">
+          <span>L-EYE RETINOTOPIC</span>
+          <span id="vision-target-label" class="text-lime-300">TRACKING: SUDOKU &amp; RUBIK</span>
+          <span>R-EYE RETINOTOPIC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Central Engineering Control Dock -->
+  <footer class="fixed bottom-0 inset-x-0 z-20 p-2.5 sm:p-3.5 flex flex-col xl:flex-row items-stretch xl:items-end justify-between gap-2 pointer-events-none">
+    <!-- Left/Center: Task Behavior Switcher + 2D<->3D + Spike Intensity + Exploded View -->
+    <div class="hud-panel corner-bracket p-2.5 rounded-sm pointer-events-auto flex-1 max-w-4xl grid grid-cols-1 sm:grid-cols-4 gap-2.5 items-center">
+      <!-- Task Mode Switcher: Post 1 Sudoku vs Post 2 Rubik's Cube vs Flight -->
+      <div class="flex flex-col gap-1">
+        <div class="font-mono-tech text-[8.5px] uppercase" style="color: var(--text-muted);">BEHAVIOR POLICY (实验模式切换):</div>
+        <div class="grid grid-cols-3 gap-1">
+          <button id="mode-sudoku" class="hud-btn active-gold font-mono-tech text-[9px] py-1.5 px-1 rounded-sm text-center" title="帖子1 (@smjain): FlyWire果蝇脑脉冲解9x9数独 + 棋盘行走">
+            ① 数独脑脉冲
+          </button>
+          <button id="mode-rubik" class="hud-btn font-mono-tech text-[9px] py-1.5 px-1 rounded-sm text-center" title="帖子2 (@nice11018): flybody六足粘附抓握并旋转三阶魔方">
+            ② 抓握玩魔方
+          </button>
+          <button id="mode-flight" class="hud-btn font-mono-tech text-[9px] py-1.5 px-1 rounded-sm text-center" title="帖子2 (@nice11018): 视觉引导220Hz自由扑翼飞行">
+            ③ 视觉引导飞
+          </button>
+        </div>
+      </div>
+
+      <!-- Slider 1: 2D Connectome Diagram <-> 3D Embodied Brain & Body -->
+      <div class="flex flex-col justify-center">
+        <div class="flex items-center justify-between font-mono-tech text-[9px] tracking-wider mb-1">
+          <button id="btn-2d-flat" class="hover:underline cursor-pointer" style="color: var(--accent-cyan);">2D 连接组图谱</button>
+          <span id="dim-pct" class="px-1 rounded text-[9px]" style="color: var(--accent-gold);">100% 3D</span>
+          <button id="btn-3d-pop" class="hover:underline cursor-pointer" style="color: var(--text-main);">3D 具身升维</button>
+        </div>
+        <input id="slider-dim" type="range" min="0" max="100" value="100" class="mech-slider" />
+      </div>
+
+      <!-- Slider 2: Neural Spike & Locomotion Tempo -->
+      <div class="flex flex-col justify-center">
+        <div class="flex items-center justify-between font-mono-tech text-[9px] tracking-wider mb-1">
+          <span style="color: var(--text-muted);">脉冲/步态速率 (TEMPO)</span>
+          <span id="tempo-pct" style="color: var(--accent-emerald);">1.0x (40ms)</span>
+        </div>
+        <input id="slider-tempo" type="range" min="20" max="250" value="100" class="mech-slider" />
+      </div>
+
+      <!-- Slider 3: 12-Subsystem Exploded View -->
+      <div class="flex flex-col justify-center">
+        <div class="flex items-center justify-between font-mono-tech text-[9px] tracking-wider mb-1">
+          <button id="btn-assembled" class="hover:underline cursor-pointer" style="color: var(--text-muted);">组装</button>
+          <span id="explode-pct" style="color: var(--accent-violet);">0%</span>
+          <button id="btn-exploded" class="hover:underline cursor-pointer" style="color: var(--accent-gold);">12部爆炸拆解</button>
+        </div>
+        <input id="slider-explode" type="range" min="0" max="100" value="0" class="mech-slider" />
+      </div>
+    </div>
+
+    <!-- Right: Camera Angles & Multi-Viewport Dock -->
+    <div class="hud-panel corner-bracket p-2.5 rounded-sm pointer-events-auto flex flex-wrap items-center gap-1.5">
+      <span class="font-mono-tech text-[9px] tracking-wider uppercase mr-0.5" style="color: var(--text-muted);">VIEW:</span>
+      <button id="cam-iso" class="hud-btn active font-mono-tech text-[9px] px-2 py-1.5 rounded-sm">ISO</button>
+      <button id="cam-brain" class="hud-btn font-mono-tech text-[9px] px-2 py-1.5 rounded-sm">BRAIN</button>
+      <button id="cam-board" class="hud-btn font-mono-tech text-[9px] px-2 py-1.5 rounded-sm">BOARD</button>
+      <button id="cam-profile" class="hud-btn font-mono-tech text-[9px] px-2 py-1.5 rounded-sm">SIDE</button>
+      <div class="h-4 w-px mx-0.5" style="background: var(--border-subtle);"></div>
+      <button id="btn-orbit" class="hud-btn font-mono-tech text-[9px] px-2 py-1.5 rounded-sm">ORBIT</button>
+      <button id="btn-quad-view" class="hud-btn font-mono-tech text-[9px] px-2 py-1.5 rounded-sm">1-4 VIEWS</button>
+    </div>
+  </footer>
+
+  <script>
+    (async function () {
+      // Load Latest Three.js v0.186.1 (r186) ES Module directly (no legacy preload overhead)
+      if (!window.THREE || parseInt(window.THREE.REVISION || '0', 10) < 180) {
+        try {
+          const latestThree = await import('https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js')
+            .catch(() => import('https://unpkg.com/three@0.186.1/build/three.module.min.js'));
+          if (latestThree && latestThree.WebGLRenderer) {
+            window.THREE = latestThree;
+          }
+        } catch (err) {
+          // Offline / restricted fallback only if both ES module CDNs fail
+          await new Promise((resolve) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+            s.onload = resolve;
+            s.onerror = resolve;
+            document.head.appendChild(s);
+          });
+        }
+      }
+      const THREE = window.THREE;
+      const revNum = parseInt(THREE.REVISION || '186', 10);
+      const isModernThree = revNum >= 155;
+      const hasWebGPU = typeof navigator !== 'undefined' && !!navigator.gpu;
+      const engBadge = document.getElementById('engine-version-badge');
+      if (engBadge) {
+        engBadge.textContent = `THREE.JS r${THREE.REVISION} (v0.186.1) · WEBGL2 PBR${hasWebGPU ? ' · WEBGPUHW' : ''}`;
+      }
+
+      // ==========================================
+      // 1. STATE & 12 SUBSYSTEMS METADATA
+      // ==========================================
+      const state = {
+        labMode: 'sudoku',    // 'sudoku' (Post 1 @smjain) | 'rubik' (Post 2 @nice11018 Rubik) | 'flight' (Post 2 Flight)
+        dimFactor: 1.0,       // 0.0 = 2D Connectome Wiring Diagram, 1.0 = 3D Embodied Brain & Flybody
+        targetDim: 1.0,
+        explodeFactor: 0.0,   // 0.0 = Assembled, 1.0 = 12-Subsystem Exploded View
+        targetExplode: 0.0,
+        tempo: 1.0,
+        autoOrbit: false,
+        quadView: false,
+        showAnnotations: true,
+        soundEnabled: false,
+        theme: 'flywire',
+        selectedPart: 'all',
+        simTime: 0,
+        demoActive: false,
+        demoElapsed: 0,
+        demoDuration: 120.0,
+        isRecording: false,
+        sudokuStage: 69,      // 69, 51, or 36 clues
+        sudokuStepTimer: 0,
+        lastPlacedCell: { r: 2, c: 4, val: 7, margin: 34.2 },
+        spikeCounts: [18, 24, 15, 31, 22, 19, 88, 27, 14]
+      };
+
+      const SUBSYSTEM_INFO = {
+        all: {
+          code: 'SYS-00 // FLYWIRE × FLYBODY LAB',
+          badge: 'NATURE 2024–2026',
+          title: '果蝇全脑连接组解数独 × 59维物理果蝇',
+          desc: '融合 @smjain 的「FlyWire 138,639 神经元脉冲解码 9×9 数独」与 @nice11018 介绍的 Google DeepMind / Janelia「flybody 59自由度物理果蝇 + 复眼视觉渲染 + 魔方抓握」。点击 01–12 部位可特写巡检。',
+          material: 'FlyWire v783 + DeepMind MuJoCo + NeuroMechFly'
+        },
+        s01_optic_l: {
+          num: '01',
+          short: '01 左视叶区',
+          code: 'SYS-01 // LEFT OPTIC LOBE (MEDULLA & LOBULA)',
+          badge: 'VISION NEURONS',
+          title: '左半球视叶神经丛（视髓 Medulla 与视小叶）',
+          desc: 'FlyWire 连接组中包含约 38,000 个视觉处理神经元。在数独实验与视觉引导飞行中，负责将左复眼输入的棋盘数字与魔方边缘转化为高维神经脉冲流。',
+          material: 'FlyWire v783 Retinotopic Connectome',
+          color: '#22d3ee',
+          camOffset: { theta: -0.45, phi: 1.05, radius: 9.2 },
+          targetPos: new THREE.Vector3(-1.6, 3.8, 0.2)
+        },
+        s02_optic_r: {
+          num: '02',
+          short: '02 右视叶区',
+          code: 'SYS-02 // RIGHT OPTIC LOBE CONNECTOME',
+          badge: 'VISION NEURONS',
+          title: '右半球视叶神经丛与双目视差突触环路',
+          desc: '与左视叶对称分布，通过跨半球连合纤维（Commissural Tracts）同步特征响应。每次 40ms 决策窗口内闪烁金色动作电位脉冲（Gold Flashes）。',
+          material: '15.1M Weighted Synaptic Connections',
+          color: '#38bdf8',
+          camOffset: { theta: 0.45, phi: 1.05, radius: 9.2 },
+          targetPos: new THREE.Vector3(1.6, 3.8, 0.2)
+        },
+        s03_central_cx: {
+          num: '03',
+          short: '03 中央复合体',
+          code: 'SYS-03 // CENTRAL COMPLEX & MUSHROOM BODY',
+          badge: 'COMPASS & MEMORY',
+          title: '中央复合体（椭球体/扇形体）与蘑菇体决策核',
+          desc: '果蝇大脑的核心导航与关联学习中枢（含 Kenyon 细胞与环状吸引子网络）。固定原始生物连接权重不变，对输入棋盘状态进行 40 毫秒非线性脉冲积分。',
+          material: 'Ellipsoid Body & Kenyon Cell Synapse Array',
+          color: '#fbbf24',
+          camOffset: { theta: 0.15, phi: 1.02, radius: 8.5 },
+          targetPos: new THREE.Vector3(0, 4.0, 0.3)
+        },
+        s04_readout: {
+          num: '04',
+          short: '04 脉冲解码层',
+          code: 'SYS-04 // DUAL TRAINED SUDOKU READOUT MODELS',
+          badge: 'ZERO BACKTRACK',
+          title: '双联数独脉冲计数解码器（120局训练·零回溯）',
+          desc: '由 @smjain 基于 120 局数独脉冲记录训练的两个轻量级输出层：模型一从脉冲计数解码盘面已有数字；模型二按行、列、3×3宫格对候选空格打分，选取最高置信度差值落子。',
+          material: 'Spike-Count Linear Readout & Margin Scorer',
+          color: '#f43f5e',
+          camOffset: { theta: 0.28, phi: 1.10, radius: 9.5 },
+          targetPos: new THREE.Vector3(0, 3.1, 0.5)
+        },
+        s05_eyes: {
+          num: '05',
+          short: '05 复眼阵列',
+          code: 'SYS-05 // COMPOUND OMMATIDIA EYES',
+          badge: '721 HEX LENSES',
+          title: '双半球六边形小眼复眼阵列（Vision Input Render）',
+          desc: '对应 @nice11018 帖中右侧实时渲染的果蝇第一视角画面：每侧复眼由约 721 个六边形小眼（Ommatidia）组成，具备蓝/黄绿双通道感光视野与超高时间分辨率。',
+          material: 'Hexagonal Ommatidia Retinotopic Array',
+          color: '#10b981',
+          camOffset: { theta: 0.52, phi: 1.18, radius: 7.2 },
+          targetPos: new THREE.Vector3(0, 0.65, 1.55)
+        },
+        s06_head: {
+          num: '06',
+          short: '06 触角与头壳',
+          code: 'SYS-06 // CRANIUM, ANTENNAE & PROBOSCIS',
+          badge: 'MECHANOSENSORY',
+          title: '几丁质头壳、约翰斯顿器官触角与口器',
+          desc: '显微镜下逐关节重建的果蝇头部，包含可感知气流与重力方向的羽状芒触角（Arista）以及三自由度颈部运动关节。',
+          material: 'Micro-CT Reconstructed Chitin Mesh',
+          color: '#a855f7',
+          camOffset: { theta: 0.65, phi: 1.20, radius: 7.5 },
+          targetPos: new THREE.Vector3(0, 0.65, 1.75)
+        },
+        s07_thorax: {
+          num: '07',
+          short: '07 59维胸腔核',
+          code: 'SYS-07 // THORAX 59-DoF MOTOR ACTUATION CORE',
+          badge: '59-DoF RL AGENT',
+          title: '中胸动力箱与 59 自由度强化学习运动控制核',
+          desc: 'Google DeepMind 与 Janelia 的 flybody 模型核心：没有任何人工关键帧动画，RL 智能体通过奖励函数自主学会同时协调全身 59 个自由度完成迈步、转弯与抓握。',
+          material: 'MuJoCo Physics Articulated Rigid Bodies',
+          color: '#06b6d4',
+          camOffset: { theta: 0.75, phi: 1.12, radius: 8.2 },
+          targetPos: new THREE.Vector3(0, 0.55, 0.45)
+        },
+        s08_wings: {
+          num: '08',
+          short: '08 220Hz双翅',
+          code: 'SYS-08 // DICHROIC AERO-MEMBRANE WINGS',
+          badge: '220 Hz FLIGHT',
+          title: '三轴铰接虹彩翅脉薄膜双翼（220Hz 自由飞行）',
+          desc: '支持俯仰（Pitch）、拍击（Stroke）与偏航（Deviation）三自由度高频扑翼，在 MuJoCo 流体气动模型下产生前缘涡升力，实现视觉引导悬停与急转。',
+          material: 'Translucent Cuticle & Tubular Wing Veins',
+          color: '#38bdf8',
+          camOffset: { theta: 0.85, phi: 0.98, radius: 9.8 },
+          targetPos: new THREE.Vector3(0, 1.05, 0.1)
+        },
+        s09_halteres: {
+          num: '09',
+          short: '09 平衡棒陀螺',
+          code: 'SYS-09 // GYROSCOPIC HALTERES',
+          badge: 'CORIOLIS SENSOR',
+          title: '后胸双联平衡棒科里奥利力陀螺仪（Halteres）',
+          desc: '由后翅演化而来的哑铃状高频振动器官，与主翼反相拍击，通过基部钟形感器实时检测身体三维角速度，维持飞行与抓握平衡。',
+          material: 'Campaniform Sensilla & Gyro Stalks',
+          color: '#f59e0b',
+          camOffset: { theta: 1.15, phi: 1.14, radius: 7.8 },
+          targetPos: new THREE.Vector3(0, 0.52, -0.25)
+        },
+        s10_legs: {
+          num: '10',
+          short: '10 粘附六足',
+          code: 'SYS-10 // 6-LEG 5-SEGMENT TARSAL ADHESION PADS',
+          badge: 'SURFACE ADHESION',
+          title: '六足五节铰接链与跗节物理粘附爪垫（Adhesion）',
+          desc: '每条腿具备基节、转节、股节、胫节与跗节 5 段独立自由度，足端带有真实物理粘附力模拟（青色发光吸盘），不仅能抓牢表面，还能像视频中一样抱持并拨动三阶魔方！',
+          material: 'MuJoCo Adhesion Actuators & Tarsal Claws',
+          color: '#10b981',
+          camOffset: { theta: 0.92, phi: 1.34, radius: 8.6 },
+          targetPos: new THREE.Vector3(0.8, -0.35, 0.5)
+        },
+        s11_abdomen: {
+          num: '11',
+          short: '11 呼吸腹节',
+          code: 'SYS-11 // 6-TERGITE ARTICULATED ABDOMEN',
+          badge: 'INERTIA BALANCE',
+          title: '琥珀条纹多节铰接腹部与重心配重尾椎',
+          desc: '还原果蝇标志性的黑金琥珀环纹背板（Tergites），在自由飞行与魔方操控时通过多节微幅弯曲动态调节全机质心。',
+          material: 'Segmented Amber Cuticle & Ventral Sternites',
+          color: '#fbbf24',
+          camOffset: { theta: 1.85, phi: 1.15, radius: 9.0 },
+          targetPos: new THREE.Vector3(0, 0.35, -1.35)
+        },
+        s12_arena: {
+          num: '12',
+          short: '12 数独与魔方',
+          code: 'SYS-12 // 9×9 SUDOKU BOARD & 3×3 RUBIK CUBE',
+          badge: 'DUAL BENCHMARK',
+          title: '9×9 全息数独实验棋盘与 3×3 物理三阶魔方台',
+          desc: '完美融合两个热帖的核心实验载体：模式①下展示 69/51/36 线索数独棋盘与金光脉冲落子；模式②下升起三阶魔方由果蝇六足粘附操控旋转。',
+          material: 'Holographic 9×9 Grid & Articulated 3×3 Cube',
+          color: '#ec4899',
+          camOffset: { theta: 0.42, phi: 1.28, radius: 13.5 },
+          targetPos: new THREE.Vector3(0, -0.8, 0.0)
+        }
+      };
+
+      const PART_KEYS = [
+        's01_optic_l', 's02_optic_r', 's03_central_cx', 's04_readout',
+        's05_eyes', 's06_head', 's07_thorax', 's08_wings',
+        's09_halteres', 's10_legs', 's11_abdomen', 's12_arena'
+      ];
+
+      // Build 12-part matrix buttons in left sidebar
+      const matrixGrid = document.getElementById('part-matrix-grid');
+      const matrixButtons = {};
+      PART_KEYS.forEach((key) => {
+        const info = SUBSYSTEM_INFO[key];
+        const btn = document.createElement('button');
+        btn.className = 'part-pill';
+        btn.textContent = info.short;
+        btn.addEventListener('click', () => selectSubsystem(key));
+        matrixGrid.appendChild(btn);
+        matrixButtons[key] = btn;
+      });
+
+      // ==========================================
+      // 2. 9x9 SUDOKU PUZZLE ENGINE (69, 51, 36 CLUES)
+      // ==========================================
+      // Valid solved 9x9 Sudoku board
+      const SOLUTION_BOARD = [
+        [5, 3, 4, 6, 7, 8, 9, 1, 2],
+        [6, 7, 2, 1, 9, 5, 3, 4, 8],
+        [1, 9, 8, 3, 4, 2, 5, 6, 7],
+        [8, 5, 9, 7, 6, 1, 4, 2, 3],
+        [4, 2, 6, 8, 5, 3, 7, 9, 1],
+        [7, 1, 3, 9, 2, 4, 8, 5, 6],
+        [9, 6, 1, 5, 3, 7, 2, 8, 4],
+        [2, 8, 7, 4, 1, 9, 6, 3, 5],
+        [3, 4, 5, 2, 8, 6, 1, 7, 9]
+      ];
+
+      const currentBoard = [];
+      const cellTypes = []; // 'clue' | 'empty' | 'solved'
+      let emptyQueue = [];
+      let totalSolvedCount = 0;
+
+      // Build 1-9 Spike Histogram bars in Right HUD
+      const spikeBarsContainer = document.getElementById('spike-bars-container');
+      const spikeBarEls = [];
+      for (let d = 1; d <= 9; d++) {
+        const barWrap = document.createElement('div');
+        barWrap.className = 'flex-1 bg-slate-800/80 rounded-t overflow-hidden h-full flex items-end';
+        const barFill = document.createElement('div');
+        barFill.className = 'w-full transition-all duration-150';
+        barFill.style.height = '30%';
+        barFill.style.background = '#22d3ee';
+        barWrap.appendChild(barFill);
+        spikeBarsContainer.appendChild(barWrap);
+        spikeBarEls.push(barFill);
+      }
+
+      // Build Mini 9x9 Grid in Right HUD
+      const sudokuMiniGrid = document.getElementById('sudoku-mini-grid');
+      const miniCells = [];
+      for (let r = 0; r < 9; r++) {
+        miniCells[r] = [];
+        for (let c = 0; c < 9; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'sudoku-mini-cell clue';
+          if (r % 3 === 2 && r < 8) cell.style.borderBottom = '1.5px solid rgba(251, 191, 36, 0.45)';
+          if (c % 3 === 2 && c < 8) cell.style.borderRight = '1.5px solid rgba(251, 191, 36, 0.45)';
+          cell.addEventListener('click', () => {
+            if (cellTypes[r][c] === 'empty') {
+              triggerSudokuPlacementAt(r, c);
+            }
+          });
+          sudokuMiniGrid.appendChild(cell);
+          miniCells[r][c] = cell;
+        }
+      }
+
+      // 3D Sudoku Board Canvas Texture (1024x1024)
+      const boardTexCanvas = document.createElement('canvas');
+      boardTexCanvas.width = 1024;
+      boardTexCanvas.height = 1024;
+      const boardTexCtx = boardTexCanvas.getContext('2d');
+      const boardCanvasTexture = new THREE.CanvasTexture(boardTexCanvas);
+      boardCanvasTexture.anisotropy = 4;
+      if (THREE.SRGBColorSpace) boardCanvasTexture.colorSpace = THREE.SRGBColorSpace;
+
+      function initSudokuStage(clueCount) {
+        state.sudokuStage = clueCount;
+        const missingCount = 81 - clueCount;
+        // Deterministic pseudo-random missing positions so each stage (69->12, 51->30, 36->45) matches @smjain's post!
+        const allIndices = [];
+        for (let i = 0; i < 81; i++) allIndices.push(i);
+        // Shuffle deterministically with seed based on clueCount
+        let seed = clueCount * 1337 + 42;
+        for (let i = 80; i > 0; i--) {
+          seed = (seed * 1664525 + 1013904223) % 4294967296;
+          const j = seed % (i + 1);
+          const tmp = allIndices[i];
+          allIndices[i] = allIndices[j];
+          allIndices[j] = tmp;
+        }
+        const emptySet = new Set(allIndices.slice(0, missingCount));
+
+        emptyQueue = [];
+        totalSolvedCount = 0;
+        for (let r = 0; r < 9; r++) {
+          currentBoard[r] = [];
+          cellTypes[r] = [];
+          for (let c = 0; c < 9; c++) {
+            const idx = r * 9 + c;
+            if (emptySet.has(idx)) {
+              currentBoard[r][c] = 0;
+              cellTypes[r][c] = 'empty';
+              emptyQueue.push({ r, c });
+            } else {
+              currentBoard[r][c] = SOLUTION_BOARD[r][c];
+              cellTypes[r][c] = 'clue';
+            }
+          }
+        }
+
+        const stageNum = clueCount === 69 ? 1 : (clueCount === 51 ? 2 : 3);
+        document.getElementById('sudoku-stage-label').textContent = `STAGE ${stageNum} (${clueCount} CLUES)`;
+        document.getElementById('metric-sudoku-prog').textContent = `${totalSolvedCount}/${missingCount} FILLED`;
+
+        ['btn-stage-69', 'btn-stage-51', 'btn-stage-36'].forEach((id) => {
+          document.getElementById(id).classList.toggle('active-gold', id === `btn-stage-${clueCount}`);
+        });
+
+        refreshSudokuVisuals();
+      }
+
+      function refreshSudokuVisuals() {
+        const nextTarget = emptyQueue.length > 0 ? emptyQueue[0] : null;
+        // 1. Update mini HTML grid
+        for (let r = 0; r < 9; r++) {
+          for (let c = 0; c < 9; c++) {
+            const el = miniCells[r][c];
+            const val = currentBoard[r][c];
+            el.textContent = val > 0 ? String(val) : '';
+            el.className = 'sudoku-mini-cell ' + (
+              nextTarget && nextTarget.r === r && nextTarget.c === c
+                ? 'active-target'
+                : (cellTypes[r][c] === 'solved' ? 'solved' : 'clue')
+            );
+          }
+        }
+
+        // 2. Redraw 3D Board Canvas Texture
+        const ctx = boardTexCtx;
+        const W = 1024;
+        ctx.fillStyle = '#050b18';
+        ctx.fillRect(0, 0, W, W);
+
+        const pad = 52;
+        const gridW = W - pad * 2;
+        const cellW = gridW / 9;
+
+        // Top & Bottom Engineering Inscriptions on 3D Board
+        ctx.fillStyle = '#22d3ee';
+        ctx.font = '600 22px "JetBrains Mono", monospace';
+        ctx.fillText(`FLY PLAYS 9x9 SUDOKU // STAGE: ${state.sudokuStage} CLUES | FLYWIRE v783 (138,639 NEURONS)`, pad, 36);
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillText(`40ms SPIKE SIMULATION PER CHOICE · ZERO BACKTRACKING · PLACEMENTS: ${totalSolvedCount}/${81 - state.sudokuStage}`, pad, W - 16);
+
+        // Draw cells
+        for (let r = 0; r < 9; r++) {
+          for (let c = 0; c < 9; c++) {
+            const x = pad + c * cellW;
+            const y = pad + r * cellW;
+            const isTarget = nextTarget && nextTarget.r === r && nextTarget.c === c;
+            const isLast = state.lastPlacedCell && state.lastPlacedCell.r === r && state.lastPlacedCell.c === c;
+
+            if (isTarget) {
+              ctx.fillStyle = 'rgba(34, 211, 238, 0.28)';
+              ctx.fillRect(x + 2, y + 2, cellW - 4, cellW - 4);
+            } else if (cellTypes[r][c] === 'solved') {
+              ctx.fillStyle = isLast ? 'rgba(251, 191, 36, 0.32)' : 'rgba(251, 191, 36, 0.12)';
+              ctx.fillRect(x + 2, y + 2, cellW - 4, cellW - 4);
+            } else {
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+              ctx.fillRect(x + 2, y + 2, cellW - 4, cellW - 4);
+            }
+
+            const val = currentBoard[r][c];
+            if (val > 0) {
+              ctx.font = cellTypes[r][c] === 'solved'
+                ? '700 56px "JetBrains Mono", monospace'
+                : '500 48px "JetBrains Mono", monospace';
+              ctx.fillStyle = cellTypes[r][c] === 'solved' ? '#fbbf24' : '#94a3b8';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(String(val), x + cellW * 0.5, y + cellW * 0.54);
+            } else if (isTarget) {
+              ctx.font = '600 24px "JetBrains Mono", monospace';
+              ctx.fillStyle = '#22d3ee';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('40ms?', x + cellW * 0.5, y + cellW * 0.5);
+            }
+          }
+        }
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+
+        // Draw 9x9 & 3x3 grid lines
+        for (let i = 0; i <= 9; i++) {
+          const pos = pad + i * cellW;
+          const isBold = (i % 3 === 0);
+          ctx.strokeStyle = isBold ? '#fbbf24' : 'rgba(56, 189, 248, 0.30)';
+          ctx.lineWidth = isBold ? 5 : 2;
+          ctx.beginPath();
+          ctx.moveTo(pos, pad);
+          ctx.lineTo(pos, pad + gridW);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(pad, pos);
+          ctx.lineTo(pad + gridW, pos);
+          ctx.stroke();
+        }
+
+        boardCanvasTexture.needsUpdate = true;
+      }
+
+      function triggerSudokuPlacementAt(r, c) {
+        const ans = SOLUTION_BOARD[r][c];
+        currentBoard[r][c] = ans;
+        cellTypes[r][c] = 'solved';
+        totalSolvedCount++;
+
+        emptyQueue = emptyQueue.filter((item) => !(item.r === r && item.c === c));
+        const margin = (24 + ((r * 7 + c * 13) % 28) + Math.random() * 6).toFixed(1);
+        state.lastPlacedCell = { r, c, val: ans, margin };
+
+        // Update 1-9 spike histogram bars (winning digit has highest spike flash!)
+        for (let d = 1; d <= 9; d++) {
+          const isWinner = (d === ans);
+          const count = isWinner ? (82 + Math.floor(Math.random() * 16)) : (12 + Math.floor(Math.random() * 28));
+          state.spikeCounts[d - 1] = count;
+          spikeBarEls[d - 1].style.height = `${count}%`;
+          spikeBarEls[d - 1].style.background = isWinner ? '#fbbf24' : '#22d3ee';
+        }
+
+        document.getElementById('readout-cell-label').textContent = `CELL (R${r + 1}, C${c + 1}) → DIGIT ${ans}`;
+        document.getElementById('readout-margin-label').textContent = `MARGIN: +${margin}% (NO BACKTRACK)`;
+        document.getElementById('metric-sudoku-prog').textContent = `${totalSolvedCount}/${81 - state.sudokuStage} FILLED`;
+
+        // Trigger gold flash burst in the 3D Connectome!
+        triggerConnectomeSpikeBurst();
+        playSpikeSound(740 + ans * 65);
+        refreshSudokuVisuals();
+      }
+
+      function stepNextSudokuCell() {
+        if (emptyQueue.length === 0) {
+          // Cycle to next stage automatically (69 -> 51 -> 36 -> 69)
+          if (state.sudokuStage === 69) initSudokuStage(51);
+          else if (state.sudokuStage === 51) initSudokuStage(36);
+          else initSudokuStage(69);
+          return;
+        }
+        const next = emptyQueue[0];
+        triggerSudokuPlacementAt(next.r, next.c);
+      }
+
+      // ==========================================
+      // 3. THREE.JS SCENE, RENDERER & CAMERAS
+      // ==========================================
+      const container = document.getElementById('canvas-container');
+      const scene = new THREE.Scene();
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: 'high-performance',
+        preserveDrawingBuffer: true
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.25;
+      container.appendChild(renderer.domElement);
+
+      const mainCamera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 200);
+      const topCamera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+      const frontCamera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+      const sideCamera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+
+      const camSpherical = {
+        radius: 15.8,
+        theta: 0.48,
+        phi: 1.12,
+        target: new THREE.Vector3(0, 1.35, 0.0)
+      };
+      const camTargetSpherical = {
+        radius: 15.8,
+        theta: 0.48,
+        phi: 1.12,
+        target: new THREE.Vector3(0, 1.35, 0.0)
+      };
+
+      // ==========================================
+      // 4. ENVIRONMENT & STUDIO LIGHTS
+      // ==========================================
+      let pmremGenerator = null;
+      try {
+        pmremGenerator = new THREE.PMREMGenerator(renderer);
+        pmremGenerator.compileEquirectangularShader();
+      } catch (e) {
+        console.warn('PMREM fallback:', e);
+      }
+
+      function buildLabEnvMap(themeName) {
+        const envScene = new THREE.Scene();
+        const bgMap = {
+          flywire: 0x040812,
+          mujoco: 0x031014,
+          biolum: 0x090415,
+          nature: 0x0c1017
+        };
+        envScene.background = new THREE.Color(bgMap[themeName] || 0x040812);
+
+        const s1 = new THREE.Mesh(new THREE.BoxGeometry(28, 3, 10), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+        s1.position.set(-15, 16, 10);
+        envScene.add(s1);
+
+        const s2 = new THREE.Mesh(new THREE.BoxGeometry(28, 10, 3), new THREE.MeshBasicMaterial({ color: 0xfbbf24 }));
+        s2.position.set(16, 10, 12);
+        envScene.add(s2);
+
+        const s3 = new THREE.Mesh(new THREE.BoxGeometry(3, 14, 28), new THREE.MeshBasicMaterial({ color: 0x10b981 }));
+        s3.position.set(-18, 4, -10);
+        envScene.add(s3);
+
+        return pmremGenerator ? pmremGenerator.fromScene(envScene, 0.04).texture : null;
+      }
+
+      scene.environment = buildLabEnvMap('flywire');
+
+      const lightScale = isModernThree ? Math.PI : 1.0;
+      const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x1e1b4b, 0.95 * (isModernThree ? 2.2 : 1.0));
+      scene.add(hemiLight);
+
+      const keyLight = new THREE.DirectionalLight(0xfffbeb, 2.3 * lightScale);
+      keyLight.position.set(8, 16, 11);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.width = 2048;
+      keyLight.shadow.mapSize.height = 2048;
+      scene.add(keyLight);
+
+      const cyanRim = new THREE.DirectionalLight(0x22d3ee, 1.7 * lightScale);
+      cyanRim.position.set(-12, 8, -10);
+      scene.add(cyanRim);
+
+      const goldCoreLight = new THREE.PointLight(0xfbbf24, 2.8 * lightScale, 14, 0);
+      goldCoreLight.position.set(0, 3.8, 0.5);
+      scene.add(goldCoreLight);
+
+      // ==========================================
+      // 5. MATERIALS PALETTE (THREE.JS r186 PHYSICAL IRIDESCENCE, SHEEN & ANISOTROPY)
+      // ==========================================
+      const mats = {
+        chitinAmber: new THREE.MeshPhysicalMaterial({
+          color: 0xd97706,
+          emissive: 0x451a03,
+          emissiveIntensity: 0.25,
+          metalness: 0.32,
+          roughness: 0.16,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.06,
+          iridescence: 0.45,
+          iridescenceIOR: 1.52,
+          sheen: 0.65,
+          sheenColor: new THREE.Color(0xfbbf24),
+          sheenRoughness: 0.25,
+          anisotropy: 0.55,
+          transparent: true,
+          opacity: 0.93
+        }),
+        chitinDark: new THREE.MeshPhysicalMaterial({
+          color: 0x1e293b,
+          metalness: 0.82,
+          roughness: 0.20,
+          clearcoat: 0.85,
+          clearcoatRoughness: 0.12,
+          anisotropy: 0.60
+        }),
+        goldSpike: new THREE.MeshPhysicalMaterial({
+          color: 0xfbbf24,
+          emissive: 0xf59e0b,
+          emissiveIntensity: 0.68,
+          metalness: 0.75,
+          roughness: 0.10,
+          clearcoat: 1.0,
+          iridescence: 0.60,
+          iridescenceIOR: 1.65
+        }),
+        rubyEye: new THREE.MeshPhysicalMaterial({
+          color: 0xe11d48,
+          emissive: 0x881337,
+          emissiveIntensity: 0.48,
+          metalness: 0.22,
+          roughness: 0.08,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.04,
+          iridescence: 0.72,
+          iridescenceIOR: 1.48,
+          iridescenceThicknessRange: [160, 420]
+        }),
+        wingMembrane: new THREE.MeshPhysicalMaterial({
+          color: 0x38bdf8,
+          emissive: 0x0284c7,
+          emissiveIntensity: 0.32,
+          metalness: 0.12,
+          roughness: 0.06,
+          clearcoat: 1.0,
+          iridescence: 1.0,
+          iridescenceIOR: 1.38,
+          iridescenceThicknessRange: [120, 480],
+          transparent: true,
+          opacity: 0.50,
+          side: THREE.DoubleSide
+        }),
+        adhesionPad: new THREE.MeshPhysicalMaterial({
+          color: 0x10b981,
+          emissive: 0x059669,
+          emissiveIntensity: 0.78,
+          metalness: 0.2,
+          roughness: 0.08,
+          clearcoat: 1.0,
+          iridescence: 0.55,
+          transparent: true,
+          opacity: 0.92
+        }),
+        cyanNeuron: new THREE.MeshPhysicalMaterial({
+          color: 0x22d3ee,
+          emissive: 0x0891b2,
+          emissiveIntensity: 0.55,
+          roughness: 0.08,
+          clearcoat: 1.0,
+          iridescence: 0.85,
+          iridescenceIOR: 1.50,
+          transparent: true,
+          opacity: 0.82
+        }),
+        violetMushroom: new THREE.MeshPhysicalMaterial({
+          color: 0xa855f7,
+          emissive: 0x6b21a8,
+          emissiveIntensity: 0.58,
+          roughness: 0.08,
+          clearcoat: 1.0,
+          iridescence: 0.85,
+          iridescenceIOR: 1.55,
+          transparent: true,
+          opacity: 0.86
+        }),
+        neonWireCyan: new THREE.LineBasicMaterial({
+          color: 0x22d3ee,
+          transparent: true,
+          opacity: 0.50
+        }),
+        neonWireGold: new THREE.LineBasicMaterial({
+          color: 0xfbbf24,
+          transparent: true,
+          opacity: 0.60
+        }),
+        synapseBridgeMat: new THREE.LineDashedMaterial({
+          color: 0xfbbf24,
+          dashSize: 0.22,
+          gapSize: 0.12,
+          transparent: true,
+          opacity: 0.75
+        }),
+        leaderDash: new THREE.LineDashedMaterial({
+          color: 0x22d3ee,
+          dashSize: 0.18,
+          gapSize: 0.10,
+          transparent: true,
+          opacity: 0.0
+        })
+      };
+
+      // ==========================================
+      // 6. BUILD THE 12 SUBSYSTEMS (BRAIN 01-04 + BODY 05-11 + ARENA 12)
+      // ==========================================
+      const labRoot = new THREE.Group();
+      scene.add(labRoot);
+
+      const interactableMeshes = [];
+      const subsystems = {};
+
+      function registerSubsystem(key, group, pos2D, scale2D, explodeVec, parentGroup) {
+        group.userData.basePos = group.position.clone();
+        group.userData.pos2D = pos2D.clone();
+        group.userData.scale2D = scale2D.clone();
+        group.userData.explodeVec = explodeVec.clone();
+        subsystems[key] = group;
+        (parentGroup || labRoot).add(group);
+      }
+
+      function tagAndEdgeSubsystem(object3d, subsystemKey, wireMat) {
+        const meshes = [];
+        object3d.traverse((child) => {
+          if (child.isMesh) {
+            child.userData.subsystem = subsystemKey;
+            child.castShadow = true;
+            child.receiveShadow = true;
+            interactableMeshes.push(child);
+            meshes.push(child);
+          }
+        });
+        meshes.forEach((m) => {
+          if (m.geometry) {
+            const edges = new THREE.EdgesGeometry(m.geometry, 30);
+            m.add(new THREE.LineSegments(edges, wireMat || mats.neonWireCyan));
+          }
+        });
+      }
+
+      // ------------------------------------------
+      // BRAIN CONNECTOME HOLOGRAM (SYS-01, SYS-02, SYS-03, SYS-04)
+      // Suspended above the arena at Y ~ 3.8 so both the 138,639-neuron brain AND the 3D fly/board are visible together!
+      // ------------------------------------------
+      const brainMasterGroup = new THREE.Group();
+      labRoot.add(brainMasterGroup);
+
+      // SYS-01: Left Optic Lobe (Medulla, Lobula, Lamina) + Point Cloud
+      const s01OpticL = new THREE.Group();
+      s01OpticL.position.set(-1.65, 3.85, 0.0);
+      registerSubsystem(
+        's01_optic_l',
+        s01OpticL,
+        new THREE.Vector3(-2.4, 3.6, 0.02),
+        new THREE.Vector3(1.15, 1.15, 0.08),
+        new THREE.Vector3(-2.1, 1.2, 0.8),
+        brainMasterGroup
+      );
+
+      // SYS-02: Right Optic Lobe
+      const s02OpticR = new THREE.Group();
+      s02OpticR.position.set(1.65, 3.85, 0.0);
+      registerSubsystem(
+        's02_optic_r',
+        s02OpticR,
+        new THREE.Vector3(2.4, 3.6, 0.02),
+        new THREE.Vector3(1.15, 1.15, 0.08),
+        new THREE.Vector3(2.1, 1.2, 0.8),
+        brainMasterGroup
+      );
+
+      [
+        { grp: s01OpticL, side: -1, key: 's01_optic_l' },
+        { grp: s02OpticR, side: 1, key: 's02_optic_r' }
+      ].forEach(({ grp, side, key }) => {
+        // Outer Lamina Cup + Inner Medulla Dome
+        const medulla = new THREE.Mesh(new THREE.IcosahedronGeometry(0.68, 2), mats.cyanNeuron);
+        medulla.scale.set(1.25, 0.92, 0.78);
+        grp.add(medulla);
+
+        const laminaRing = new THREE.Mesh(new THREE.TorusGeometry(0.76, 0.05, 12, 32), mats.goldSpike);
+        laminaRing.position.x = side * 0.25;
+        laminaRing.rotation.y = side * 0.45;
+        grp.add(laminaRing);
+
+        // Retinotopic Tract bundle connecting to Central Brain
+        const tract = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.22, 0.85, 10), mats.violetMushroom);
+        tract.rotation.z = Math.PI / 2;
+        tract.position.x = -side * 0.65;
+        grp.add(tract);
+
+        tagAndEdgeSubsystem(grp, key, mats.neonWireCyan);
+      });
+
+      // SYS-03: Central Complex (Ellipsoid Body Torus + Fan-Shaped Body) & Mushroom Bodies
+      const s03CentralCx = new THREE.Group();
+      s03CentralCx.position.set(0, 3.92, 0.0);
+      registerSubsystem(
+        's03_central_cx',
+        s03CentralCx,
+        new THREE.Vector3(0, 3.65, 0.04),
+        new THREE.Vector3(1.15, 1.15, 0.08),
+        new THREE.Vector3(0, 2.15, 0.9),
+        brainMasterGroup
+      );
+
+      const centralNeuropil = new THREE.Mesh(new THREE.OctahedronGeometry(0.75, 2), mats.violetMushroom);
+      centralNeuropil.scale.set(1.35, 0.95, 0.82);
+      s03CentralCx.add(centralNeuropil);
+
+      // Ring Attractor (Ellipsoid Body) inside Central Complex
+      const ellipsoidRing = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 14, 32), mats.goldSpike);
+      s03CentralCx.add(ellipsoidRing);
+
+      // Twin L-shaped Mushroom Body lobes (Alpha/Beta & Gamma lobes)
+      [-1, 1].forEach((side) => {
+        const mbStalk = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.68, 10), mats.goldSpike);
+        mbStalk.position.set(side * 0.42, 0.25, 0.18);
+        mbStalk.rotation.z = side * -0.28;
+        s03CentralCx.add(mbStalk);
+
+        const mbCalyx = new THREE.Mesh(new THREE.DodecahedronGeometry(0.22, 1), mats.cyanNeuron);
+        mbCalyx.position.set(side * 0.55, 0.56, -0.12);
+        s03CentralCx.add(mbCalyx);
+      });
+      tagAndEdgeSubsystem(s03CentralCx, 's03_central_cx', mats.neonWireGold);
+
+      // SYS-04: Dual Trained Sudoku Readout Layer (9 Output Nodes for Digits 1..9 + Spike Halo)
+      const s04Readout = new THREE.Group();
+      s04Readout.position.set(0, 2.95, 0.15);
+      registerSubsystem(
+        's04_readout',
+        s04Readout,
+        new THREE.Vector3(0, 2.55, 0.05),
+        new THREE.Vector3(1.1, 1.1, 0.08),
+        new THREE.Vector3(0, 1.15, 2.1),
+        brainMasterGroup
+      );
+
+      const readoutNodes = [];
+      for (let i = 0; i < 9; i++) {
+        const angle = ((i - 4) / 4) * 1.15;
+        const nx = Math.sin(angle) * 1.55;
+        const nz = Math.cos(angle) * 0.45;
+        const nodeMesh = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.13, 1),
+          i === 6 ? mats.goldSpike : mats.cyanNeuron
+        );
+        nodeMesh.position.set(nx, 0, nz);
+        s04Readout.add(nodeMesh);
+        readoutNodes.push(nodeMesh);
+      }
+      const readoutBus = new THREE.Mesh(new THREE.TorusGeometry(1.55, 0.02, 8, 36, Math.PI * 0.75), mats.goldSpike);
+      readoutBus.rotation.x = Math.PI / 2;
+      readoutBus.rotation.z = Math.PI * 0.125;
+      s04Readout.add(readoutBus);
+      tagAndEdgeSubsystem(s04Readout, 's04_readout', mats.neonWireGold);
+
+      // 1,800-Particle FlyWire Connectome Point Cloud + Gold Spike Flashes!
+      const neuronCount = 1800;
+      const neuronGeo = new THREE.BufferGeometry();
+      const neuronPos = new Float32Array(neuronCount * 3);
+      const neuronColors = new Float32Array(neuronCount * 3);
+      const neuronBaseColors = new Float32Array(neuronCount * 3);
+
+      for (let i = 0; i < neuronCount; i++) {
+        // Distribute across Left Optic Lobe (-1.65), Central Brain (0), Right Optic Lobe (+1.65)
+        const region = i % 3;
+        let cx = 0;
+        let rx = 0.95, ry = 0.65, rz = 0.55;
+        let col = new THREE.Color(0xa855f7);
+        if (region === 0) {
+          cx = -1.65; rx = 0.85; ry = 0.62; rz = 0.52;
+          col = new THREE.Color(0x22d3ee);
+        } else if (region === 1) {
+          cx = 1.65; rx = 0.85; ry = 0.62; rz = 0.52;
+          col = new THREE.Color(0x38bdf8);
+        }
+        const u = Math.random() * Math.PI * 2;
+        const v = Math.acos(2 * Math.random() - 1);
+        const r = Math.cbrt(Math.random());
+        neuronPos[i * 3] = cx + r * rx * Math.sin(v) * Math.cos(u);
+        neuronPos[i * 3 + 1] = 3.88 + r * ry * Math.sin(v) * Math.sin(u);
+        neuronPos[i * 3 + 2] = r * rz * Math.cos(v);
+
+        neuronColors[i * 3] = col.r;
+        neuronColors[i * 3 + 1] = col.g;
+        neuronColors[i * 3 + 2] = col.b;
+        neuronBaseColors[i * 3] = col.r;
+        neuronBaseColors[i * 3 + 1] = col.g;
+        neuronBaseColors[i * 3 + 2] = col.b;
+      }
+      neuronGeo.setAttribute('position', new THREE.BufferAttribute(neuronPos, 3));
+      neuronGeo.setAttribute('color', new THREE.BufferAttribute(neuronColors, 3));
+      const connectomeCloud = new THREE.Points(
+        neuronGeo,
+        new THREE.PointsMaterial({ size: 0.085, vertexColors: true, transparent: true, opacity: 0.90 })
+      );
+      brainMasterGroup.add(connectomeCloud);
+
+      let spikeFlashBoost = 0;
+      function triggerConnectomeSpikeBurst() {
+        spikeFlashBoost = 1.0;
+      }
+
+      // ------------------------------------------
+      // EMBODIED DROSOPHILA BODY (flybody / NeuroMechFly: SYS-05 to SYS-11)
+      // ------------------------------------------
+      const flyWalkerRoot = new THREE.Group();
+      flyWalkerRoot.position.set(0, 0.35, 0.0);
+      labRoot.add(flyWalkerRoot);
+
+      // SYS-05: Compound Ommatidia Eyes (Left & Right Red-Ruby Hexagonal Domes)
+      const s05Eyes = new THREE.Group();
+      s05Eyes.position.set(0, 0.58, 1.38);
+      registerSubsystem(
+        's05_eyes',
+        s05Eyes,
+        new THREE.Vector3(0, 1.55, 0.06),
+        new THREE.Vector3(1.2, 1.2, 0.10),
+        new THREE.Vector3(0, 0.95, 2.2),
+        flyWalkerRoot
+      );
+      [-1, 1].forEach((side) => {
+        const eyeDome = new THREE.Mesh(new THREE.IcosahedronGeometry(0.30, 2), mats.rubyEye);
+        eyeDome.scale.set(0.82, 1.05, 1.12);
+        eyeDome.position.set(side * 0.32, 0.04, 0.05);
+        s05Eyes.add(eyeDome);
+
+        const bezel = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.025, 10, 24), mats.goldSpike);
+        bezel.position.set(side * 0.25, 0.04, 0.05);
+        bezel.rotation.y = Math.PI / 2;
+        s05Eyes.add(bezel);
+      });
+      tagAndEdgeSubsystem(s05Eyes, 's05_eyes', mats.neonWireGold);
+
+      // SYS-06: Cranium, Johnston's Organ Antennae & Proboscis
+      const s06Head = new THREE.Group();
+      s06Head.position.set(0, 0.55, 1.32);
+      registerSubsystem(
+        's06_head',
+        s06Head,
+        new THREE.Vector3(0, 1.45, 0.04),
+        new THREE.Vector3(1.15, 1.15, 0.10),
+        new THREE.Vector3(0, 0.45, 2.55),
+        flyWalkerRoot
+      );
+      const headCapsule = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 16), mats.chitinDark);
+      headCapsule.scale.set(1.05, 0.92, 0.95);
+      s06Head.add(headCapsule);
+
+      // Three Ocelli on vertex of head + Twin Antennae with feathery Arista
+      [-1, 1].forEach((side) => {
+        const pedicel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.24, 8), mats.goldSpike);
+        pedicel.position.set(side * 0.12, 0.12, 0.36);
+        pedicel.rotation.x = 0.65;
+        pedicel.rotation.z = side * -0.35;
+        s06Head.add(pedicel);
+      });
+      const proboscis = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.32, 8), mats.chitinAmber);
+      proboscis.rotation.x = Math.PI * 0.72;
+      proboscis.position.set(0, -0.26, 0.22);
+      s06Head.add(proboscis);
+      tagAndEdgeSubsystem(s06Head, 's06_head', mats.neonWireCyan);
+
+      // SYS-07: Thorax 59-DoF Motor Actuation Core
+      const s07Thorax = new THREE.Group();
+      s07Thorax.position.set(0, 0.58, 0.35);
+      registerSubsystem(
+        's07_thorax',
+        s07Thorax,
+        new THREE.Vector3(0, 0.55, 0.04),
+        new THREE.Vector3(1.15, 1.15, 0.10),
+        new THREE.Vector3(0, 1.15, 0.45),
+        flyWalkerRoot
+      );
+      const mesonotum = new THREE.Mesh(new THREE.SphereGeometry(0.62, 20, 16), mats.chitinAmber);
+      mesonotum.scale.set(0.88, 0.85, 1.32);
+      s07Thorax.add(mesonotum);
+
+      // Internal 59-DoF RL Motor Core visible through translucent amber thorax
+      const motorCore = new THREE.Mesh(new THREE.OctahedronGeometry(0.36, 1), mats.cyanNeuron);
+      s07Thorax.add(motorCore);
+      for (let r = 0; r < 4; r++) {
+        const rib = new THREE.Mesh(new THREE.TorusGeometry(0.55 - r * 0.04, 0.022, 8, 24), mats.goldSpike);
+        rib.position.z = -0.36 + r * 0.24;
+        s07Thorax.add(rib);
+      }
+      tagAndEdgeSubsystem(s07Thorax, 's07_thorax', mats.neonWireGold);
+
+      // SYS-08: Dichroic Aero-Membrane Wings (220Hz 3-DoF Hinges)
+      const s08Wings = new THREE.Group();
+      s08Wings.position.set(0, 0.92, 0.32);
+      registerSubsystem(
+        's08_wings',
+        s08Wings,
+        new THREE.Vector3(0, 0.65, 0.02),
+        new THREE.Vector3(1.25, 1.15, 0.06),
+        new THREE.Vector3(0, 1.85, -0.35),
+        flyWalkerRoot
+      );
+
+      const wingPivots = [];
+      [-1, 1].forEach((side) => {
+        const wPivot = new THREE.Group();
+        wPivot.position.set(side * 0.42, 0, 0);
+
+        // Build teardop Drosophila wing geometry with 5 longitudinal veins (L1..L5)
+        const wingShape = new THREE.Shape();
+        wingShape.moveTo(0, 0);
+        wingShape.bezierCurveTo(side * 0.8, 0.1, side * 1.9, 0.2, side * 2.35, -0.45);
+        wingShape.bezierCurveTo(side * 2.55, -1.15, side * 1.65, -2.05, side * 0.65, -1.85);
+        wingShape.bezierCurveTo(side * 0.25, -1.65, side * 0.08, -0.65, 0, 0);
+
+        const wGeo = new THREE.ShapeGeometry(wingShape, 16);
+        wGeo.rotateX(Math.PI / 2);
+        const wMesh = new THREE.Mesh(wGeo, mats.wingMembrane);
+        wPivot.add(wMesh);
+
+        // Golden coastal vein spar
+        const spar = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.008, 2.35, 8), mats.goldSpike);
+        spar.rotation.z = side * -1.15;
+        spar.rotation.x = 0.45;
+        spar.position.set(side * 1.05, 0.02, -0.65);
+        wPivot.add(spar);
+
+        s08Wings.add(wPivot);
+        wingPivots.push({ pivot: wPivot, side });
+      });
+      tagAndEdgeSubsystem(s08Wings, 's08_wings', mats.neonWireCyan);
+
+      // SYS-09: Gyroscopic Halteres (Dumbbell Coriolis Sensors behind wings)
+      const s09Halteres = new THREE.Group();
+      s09Halteres.position.set(0, 0.56, -0.35);
+      registerSubsystem(
+        's09_halteres',
+        s09Halteres,
+        new THREE.Vector3(0, 0.15, 0.04),
+        new THREE.Vector3(1.2, 1.2, 0.08),
+        new THREE.Vector3(0, 0.95, -1.35),
+        flyWalkerRoot
+      );
+      const haltereStalks = [];
+      [-1, 1].forEach((side) => {
+        const hGroup = new THREE.Group();
+        hGroup.position.set(side * 0.46, 0, 0);
+        const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.36, 8), mats.goldSpike);
+        stalk.rotation.z = side * -1.1;
+        stalk.position.x = side * 0.16;
+        hGroup.add(stalk);
+
+        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 12), mats.adhesionPad);
+        knob.position.set(side * 0.34, 0.08, 0);
+        hGroup.add(knob);
+        s09Halteres.add(hGroup);
+        haltereStalks.push({ group: hGroup, side });
+      });
+      tagAndEdgeSubsystem(s09Halteres, 's09_halteres', mats.neonWireGold);
+
+      // SYS-10: 6 Articulated 5-Segment Legs with Glowing Tarsal Adhesion Pads!
+      const s10Legs = new THREE.Group();
+      s10Legs.position.set(0, 0.18, 0.32);
+      registerSubsystem(
+        's10_legs',
+        s10Legs,
+        new THREE.Vector3(0, -0.25, 0.04),
+        new THREE.Vector3(1.15, 1.15, 0.08),
+        new THREE.Vector3(0, -1.35, 0.85),
+        flyWalkerRoot
+      );
+
+      const flyLegs = [];
+      const legSpecs = [
+        { pair: 0, zOff: 0.52, spread: 0.55, reach: 0.72 }, // Prothoracic (Front legs - grip Rubik's cube!)
+        { pair: 1, zOff: 0.02, spread: 0.82, reach: 0.82 }, // Mesothoracic (Mid legs)
+        { pair: 2, zOff: -0.48, spread: 0.75, reach: 0.92 } // Metathoracic (Hind legs)
+      ];
+
+      legSpecs.forEach((spec) => {
+        [-1, 1].forEach((side) => {
+          const legRoot = new THREE.Group();
+          legRoot.position.set(side * 0.38, 0, spec.zOff);
+
+          // Coxa + Trochanter joint
+          const coxa = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 10), mats.goldSpike);
+          legRoot.add(coxa);
+
+          // Femur segment
+          const femurGrp = new THREE.Group();
+          femurGrp.rotation.z = side * -0.78;
+          const femurMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.032, spec.reach, 10), mats.chitinDark);
+          femurMesh.position.y = -spec.reach * 0.5;
+          femurGrp.add(femurMesh);
+
+          // Tibia segment
+          const tibiaGrp = new THREE.Group();
+          tibiaGrp.position.y = -spec.reach;
+          tibiaGrp.rotation.z = side * 0.95;
+          const tibiaMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.020, spec.reach * 0.95, 10), mats.chitinAmber);
+          tibiaMesh.position.y = -spec.reach * 0.47;
+          tibiaGrp.add(tibiaMesh);
+
+          // Tarsus + Glowing Adhesion Pad (Pulvilli / Claw)
+          const tarsusPad = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.04, 12), mats.adhesionPad);
+          tarsusPad.position.set(side * 0.06, -spec.reach * 0.95, 0.06);
+          tibiaGrp.add(tarsusPad);
+
+          // Adhesion force ring
+          const forceRing = new THREE.Mesh(new THREE.RingGeometry(0.11, 0.16, 18), new THREE.MeshBasicMaterial({
+            color: 0x10b981,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.8
+          }));
+          forceRing.rotation.x = -Math.PI / 2;
+          forceRing.position.copy(tarsusPad.position);
+          forceRing.position.y -= 0.02;
+          tibiaGrp.add(forceRing);
+
+          femurGrp.add(tibiaGrp);
+          legRoot.add(femurGrp);
+          s10Legs.add(legRoot);
+
+          flyLegs.push({
+            root: legRoot,
+            femur: femurGrp,
+            tibia: tibiaGrp,
+            pad: tarsusPad,
+            ring: forceRing,
+            side,
+            pair: spec.pair
+          });
+        });
+      });
+      tagAndEdgeSubsystem(s10Legs, 's10_legs', mats.neonWireCyan);
+
+      // SYS-11: 6-Tergite Articulated Abdomen (Banded Amber & Dark Cuticle)
+      const s11Abdomen = new THREE.Group();
+      s11Abdomen.position.set(0, 0.45, -0.68);
+      registerSubsystem(
+        's11_abdomen',
+        s11Abdomen,
+        new THREE.Vector3(0, -0.95, 0.04),
+        new THREE.Vector3(1.15, 1.15, 0.10),
+        new THREE.Vector3(0, 0.35, -2.35),
+        flyWalkerRoot
+      );
+
+      const abdomenSegs = [];
+      for (let i = 0; i < 6; i++) {
+        const t = i / 5;
+        const r = 0.56 * Math.sin((t * 0.78 + 0.18) * Math.PI);
+        const seg = new THREE.Mesh(
+          new THREE.CylinderGeometry(r * 0.92, r, 0.28, 16),
+          i % 2 === 0 ? mats.chitinAmber : mats.chitinDark
+        );
+        seg.rotation.x = Math.PI / 2;
+        seg.position.set(0, -t * 0.15, -i * 0.25);
+        s11Abdomen.add(seg);
+        abdomenSegs.push(seg);
+      }
+      tagAndEdgeSubsystem(s11Abdomen, 's11_abdomen', mats.neonWireGold);
+
+      // ------------------------------------------
+      // SYS-12: 9x9 SUDOKU BOARD ARENA + 3x3 RUBIK'S CUBE MANIPULATOR
+      // ------------------------------------------
+      const s12Arena = new THREE.Group();
+      s12Arena.position.set(0, -0.58, 0.0);
+      registerSubsystem(
+        's12_arena',
+        s12Arena,
+        new THREE.Vector3(0, -1.65, -0.05),
+        new THREE.Vector3(1.0, 1.0, 0.08),
+        new THREE.Vector3(0, -2.15, 0.0)
+      );
+
+      // 1. 9x9 Sudoku Board Table
+      const boardGroup = new THREE.Group();
+      s12Arena.add(boardGroup);
+
+      const boardSlab = new THREE.Mesh(
+        new THREE.BoxGeometry(9.6, 0.18, 9.6),
+        new THREE.MeshStandardMaterial({ color: 0x0b1528, metalness: 0.85, roughness: 0.22 })
+      );
+      boardSlab.position.y = -0.10;
+      boardGroup.add(boardSlab);
+
+      const boardTopPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(9.2, 9.2),
+        new THREE.MeshBasicMaterial({ map: boardCanvasTexture })
+      );
+      boardTopPlane.rotation.x = -Math.PI / 2;
+      boardTopPlane.position.y = 0.01;
+      boardGroup.add(boardTopPlane);
+
+      // Glowing target cell beacon on the 3D Sudoku board
+      const targetCellBeacon = new THREE.Mesh(
+        new THREE.RingGeometry(0.32, 0.46, 24),
+        new THREE.MeshBasicMaterial({ color: 0xfbbf24, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
+      );
+      targetCellBeacon.rotation.x = -Math.PI / 2;
+      targetCellBeacon.position.y = 0.03;
+      boardGroup.add(targetCellBeacon);
+
+      // 2. 3x3 Rubik's Cube & Non-Clipping MuJoCo Force Ring Pedestal (for Post 2 @nice11018 `flybody` manipulation!)
+      // Suspended at local y = 0.78 (world y = +0.20), while boardGroup is hidden in rubik mode so cube & plate NEVER intersect!
+      const rubikGroup = new THREE.Group();
+      rubikGroup.position.set(0, 0.78, 0.22);
+      rubikGroup.rotation.set(0.32, 0.62, 0);
+      rubikGroup.visible = true;
+      s12Arena.add(rubikGroup);
+
+      // Dedicated MuJoCo Magnetic Force-Ring Pedestal well below the suspended Rubik's Cube (at local y = -0.85, world y = -1.43 => >1.0 unit clear gap!)
+      const mujocoPedestalGroup = new THREE.Group();
+      mujocoPedestalGroup.position.set(0, -0.85, 0.22);
+      mujocoPedestalGroup.visible = true;
+      s12Arena.add(mujocoPedestalGroup);
+
+      const pedestalBaseDisc = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.4, 2.6, 0.12, 48),
+        new THREE.MeshStandardMaterial({ color: 0x061320, metalness: 0.88, roughness: 0.20 })
+      );
+      pedestalBaseDisc.position.y = -0.08;
+      mujocoPedestalGroup.add(pedestalBaseDisc);
+
+      const pedestalBaseRing = new THREE.Mesh(
+        new THREE.RingGeometry(1.55, 2.35, 48),
+        new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.36 })
+      );
+      pedestalBaseRing.rotation.x = -Math.PI / 2;
+      pedestalBaseRing.position.y = 0.01;
+      mujocoPedestalGroup.add(pedestalBaseRing);
+
+      const pedestalInnerRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.72, 0.88, 36),
+        new THREE.MeshBasicMaterial({ color: 0x22d3ee, side: THREE.DoubleSide, transparent: true, opacity: 0.78 })
+      );
+      pedestalInnerRing.rotation.x = -Math.PI / 2;
+      pedestalInnerRing.position.y = 0.02;
+      mujocoPedestalGroup.add(pedestalInnerRing);
+
+      // 3D Floating Holographic Stopwatch & Scramble/Solve Scoreboard right next to the Rubik's Cube!
+      const rubikHoloCanvas = document.createElement('canvas');
+      rubikHoloCanvas.width = 640;
+      rubikHoloCanvas.height = 280;
+      const rubikHoloCtx = rubikHoloCanvas.getContext('2d');
+      const rubikHoloTex = new THREE.CanvasTexture(rubikHoloCanvas);
+      if (THREE.SRGBColorSpace) rubikHoloTex.colorSpace = THREE.SRGBColorSpace;
+      const rubikHoloBoard = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.4, 1.48),
+        new THREE.MeshBasicMaterial({ map: rubikHoloTex, transparent: true, side: THREE.DoubleSide })
+      );
+      rubikHoloBoard.position.set(2.55, 0.95, 0.25);
+      rubikHoloBoard.rotation.y = -0.28;
+      mujocoPedestalGroup.add(rubikHoloBoard);
+
+      // True 27-Cubie 6-Color 3x3 Rubik's Cube with Real 90-Degree Face-Turn Restoration!
+      const CUBIE_SPACING = 0.41;
+      const faceColors = {
+        right: 0xef4444,  // +X (R): Red
+        left: 0xf97316,   // -X (L): Orange
+        top: 0xf8fafc,    // +Y (U): White
+        bottom: 0xfbbf24, // -Y (D): Yellow
+        front: 0x10b981,  // +Z (F): Green
+        back: 0x3b82f6,   // -Z (B): Blue
+        core: 0x0f172a    // Interior bevels: Dark Slate
+      };
+
+      const rubikCubies = [];
+      for (let gx = -1; gx <= 1; gx++) {
+        for (let gy = -1; gy <= 1; gy++) {
+          for (let gz = -1; gz <= 1; gz++) {
+            // BoxGeometry material order: [Right(+X), Left(-X), Top(+Y), Bottom(-Y), Front(+Z), Back(-Z)]
+            const makeStickerMat = (isFace, hex) => new THREE.MeshPhysicalMaterial({
+              color: isFace ? hex : faceColors.core,
+              metalness: isFace ? 0.15 : 0.35,
+              roughness: isFace ? 0.10 : 0.22,
+              clearcoat: 1.0,
+              clearcoatRoughness: 0.05
+            });
+            const cubieMats = [
+              makeStickerMat(gx === 1, faceColors.right),
+              makeStickerMat(gx === -1, faceColors.left),
+              makeStickerMat(gy === 1, faceColors.top),
+              makeStickerMat(gy === -1, faceColors.bottom),
+              makeStickerMat(gz === 1, faceColors.front),
+              makeStickerMat(gz === -1, faceColors.back)
+            ];
+            const cubie = new THREE.Mesh(new THREE.BoxGeometry(0.375, 0.375, 0.375), cubieMats);
+            cubie.position.set(gx * CUBIE_SPACING, gy * CUBIE_SPACING, gz * CUBIE_SPACING);
+            cubie.userData.homeGrid = new THREE.Vector3(gx, gy, gz);
+            cubie.userData.gridPos = new THREE.Vector3(gx, gy, gz);
+            rubikGroup.add(cubie);
+            rubikCubies.push(cubie);
+          }
+        }
+      }
+
+      tagAndEdgeSubsystem(s12Arena, 's12_arena', mats.neonWireCyan);
+
+      // Synaptic Data Stream Beams connecting the 3D Brain Connectome down to the Fruit Fly's Thorax!
+      const neuralBeamGeo = new THREE.BufferGeometry();
+      const beamPositions = new Float32Array(12 * 2 * 3);
+      neuralBeamGeo.setAttribute('position', new THREE.BufferAttribute(beamPositions, 3));
+      const neuralBeams = new THREE.LineSegments(neuralBeamGeo, mats.synapseBridgeMat);
+      labRoot.add(neuralBeams);
+
+      // 2D<->3D Laser Scanner Plane & Exploded Leader Lines
+      const scanPlaneGeo = new THREE.PlaneGeometry(14, 0.08);
+      const scanPlaneMat = new THREE.MeshBasicMaterial({
+        color: 0x22d3ee,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.0
+      });
+      const scanLaserPlane = new THREE.Mesh(scanPlaneGeo, scanPlaneMat);
+      scene.add(scanLaserPlane);
+
+      const leaderLineGeo = new THREE.BufferGeometry();
+      const leaderPositions = new Float32Array(PART_KEYS.length * 2 * 3);
+      leaderLineGeo.setAttribute('position', new THREE.BufferAttribute(leaderPositions, 3));
+      const leaderLines = new THREE.LineSegments(leaderLineGeo, mats.leaderDash);
+      labRoot.add(leaderLines);
+
+      // ==========================================
+      // 6B. REAL 3x3 RUBIK'S CUBE SCRAMBLE, SOLVE & STOPWATCH ENGINE
+      // ==========================================
+      // Each face turn has a realistic biomechanical base duration:
+      // 40ms (0.04s) FlyWire neural spike decision + ~0.28s-0.42s 6-leg tarsal adhesion regrip & flick (mean ~0.38s/move -> ~3.80s/10 moves)
+      const RUBIK_MOVE_POOL = [
+        { name: 'R',  face: 'R', inv: "R'", axis: 'x', layer: 1,  dir: -1, baseCost: 0.37 },
+        { name: "R'", face: 'R', inv: 'R',  axis: 'x', layer: 1,  dir: 1,  baseCost: 0.38 },
+        { name: 'L',  face: 'L', inv: "L'", axis: 'x', layer: -1, dir: 1,  baseCost: 0.39 },
+        { name: "L'", face: 'L', inv: 'L',  axis: 'x', layer: -1, dir: -1, baseCost: 0.38 },
+        { name: 'U',  face: 'U', inv: "U'", axis: 'y', layer: 1,  dir: -1, baseCost: 0.33 },
+        { name: "U'", face: 'U', inv: 'U',  axis: 'y', layer: 1,  dir: 1,  baseCost: 0.34 },
+        { name: 'D',  face: 'D', inv: "D'", axis: 'y', layer: -1, dir: 1,  baseCost: 0.43 },
+        { name: "D'", face: 'D', inv: 'D',  axis: 'y', layer: -1, dir: -1, baseCost: 0.42 },
+        { name: 'F',  face: 'F', inv: "F'", axis: 'z', layer: 1,  dir: -1, baseCost: 0.35 },
+        { name: "F'", face: 'F', inv: 'F',  axis: 'z', layer: 1,  dir: 1,  baseCost: 0.36 },
+        { name: 'B',  face: 'B', inv: "B'", axis: 'z', layer: -1, dir: 1,  baseCost: 0.43 },
+        { name: "B'", face: 'B', inv: 'B',  axis: 'z', layer: -1, dir: -1, baseCost: 0.42 }
+      ];
+
+      const MOVE_MAP = {};
+      RUBIK_MOVE_POOL.forEach((m) => { MOVE_MAP[m.name] = m; });
+
+      // True random helper using Web Crypto API (with Math.random fallback)
+      function getTrueRandomFloat() {
+        if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+          const arr = new Uint32Array(1);
+          window.crypto.getRandomValues(arr);
+          return arr[0] / 4294967296;
+        }
+        return Math.random();
+      }
+
+      function getTrueRandomInt(maxExclusive) {
+        return Math.floor(getTrueRandomFloat() * maxExclusive);
+      }
+
+      // Set of all previously used scramble signatures so a scramble NEVER repeats!
+      const usedScrambleSignatures = new Set();
+
+      const rubikState = {
+        phase: 'SCRAMBLING', // 'SCRAMBLING' (打乱顺序) | 'SOLVING' (还原计时) | 'SOLVED' (已还原定格)
+        scrambleMoves: [],
+        solveMoves: [],
+        moveIndex: 0,
+        moveProgress: 0,
+        activeMove: null,
+        activeCubies: [],
+        solveElapsed: 0.0,
+        lastSolveTime: 3.76,
+        bestSolveTime: 3.48,
+        avgSolveTime: 3.80,
+        solveHistory: [3.84, 3.76], // Pre-seeded with 2 baseline runs averaging 3.80s
+        solvedHoldTimer: 0.0,
+        roundCount: 0,
+        currentSignature: ''
+      };
+
+      const rubikMovePillsContainer = document.getElementById('rubik-move-pills');
+      const rubikPillEls = [];
+      for (let i = 0; i < 10; i++) {
+        const pill = document.createElement('div');
+        pill.className = 'text-center py-0.5 rounded-sm border border-slate-700 bg-slate-900/80 text-slate-400';
+        pill.textContent = '-';
+        rubikMovePillsContainer.appendChild(pill);
+        rubikPillEls.push(pill);
+      }
+
+      function resetCubiesToSolvedHome() {
+        rubikCubies.forEach((c) => {
+          const h = c.userData.homeGrid;
+          c.userData.gridPos.copy(h);
+          c.position.set(h.x * CUBIE_SPACING, h.y * CUBIE_SPACING, h.z * CUBIE_SPACING);
+          c.quaternion.set(0, 0, 0, 1);
+        });
+      }
+
+      function drawRubikHoloBillboard() {
+        const ctx = rubikHoloCtx;
+        const W = rubikHoloCanvas.width;
+        const H = rubikHoloCanvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        ctx.fillStyle = 'rgba(5, 14, 28, 0.90)';
+        ctx.strokeStyle = rubikState.phase === 'SOLVED' ? '#10b981' : (rubikState.phase === 'SOLVING' ? '#22d3ee' : '#f43f5e');
+        ctx.lineWidth = 4;
+        ctx.fillRect(6, 6, W - 12, H - 12);
+        ctx.strokeRect(6, 6, W - 12, H - 12);
+
+        // Header line
+        ctx.font = '700 21px "JetBrains Mono", "Microsoft YaHei", sans-serif';
+        if (rubikState.phase === 'SCRAMBLING') {
+          ctx.fillStyle = '#fb7185';
+          ctx.fillText(`① 第#${rubikState.roundCount}局·真随机不重样打乱 (${rubikState.moveIndex + 1}/10步)`, 22, 40);
+        } else if (rubikState.phase === 'SOLVING') {
+          ctx.fillStyle = '#22d3ee';
+          const curDurMs = rubikState.activeMove && rubikState.activeMove.stepDuration
+            ? Math.round(rubikState.activeMove.stepDuration * 1000)
+            : 380;
+          ctx.fillText(`② 脑脉冲40ms+六足拨动${curDurMs - 40}ms (${rubikState.moveIndex + 1}/10步)`, 22, 40);
+        } else {
+          ctx.fillStyle = '#10b981';
+          ctx.fillText(`③ 第#${rubikState.roundCount}局 6面完全还原 ✓ (用时 ${rubikState.solveElapsed.toFixed(2)}s)`, 22, 40);
+        }
+
+        // Giant Stopwatch Readout
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = '700 52px "JetBrains Mono", monospace';
+        const timeText = rubikState.phase === 'SCRAMBLING'
+          ? '00.00 s'
+          : `${rubikState.solveElapsed.toFixed(2).padStart(5, '0')} s`;
+        ctx.fillText(`⏱ ${timeText}`, 22, 108);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '600 17px "JetBrains Mono", "Microsoft YaHei", sans-serif';
+        ctx.fillText(`多局平均: ${rubikState.avgSolveTime.toFixed(2)}s | 最佳: ${rubikState.bestSolveTime.toFixed(2)}s | 已去重: ${usedScrambleSignatures.size}局`, 24, 145);
+
+        // Formula sequence row
+        const seqList = rubikState.phase === 'SCRAMBLING' ? rubikState.scrambleMoves : rubikState.solveMoves;
+        const seqLabel = rubikState.phase === 'SCRAMBLING'
+          ? `第#${rubikState.roundCount}局唯一打乱顺序 (绝不重复):`
+          : `逆向还原序列 (每步=40ms脑脉冲+六足拨动):`;
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '600 16px "JetBrains Mono", "Microsoft YaHei", sans-serif';
+        ctx.fillText(seqLabel, 24, 184);
+
+        for (let i = 0; i < seqList.length; i++) {
+          const bx = 24 + i * 59;
+          const by = 198;
+          const isDone = (rubikState.phase === 'SOLVED') || (i < rubikState.moveIndex);
+          const isCur = (rubikState.phase !== 'SOLVED') && (i === rubikState.moveIndex);
+          ctx.fillStyle = isCur ? '#fbbf24' : (isDone ? 'rgba(16, 185, 129, 0.32)' : 'rgba(15, 23, 42, 0.85)');
+          ctx.strokeStyle = isCur ? '#ffffff' : (isDone ? '#10b981' : '#475569');
+          ctx.lineWidth = 2;
+          ctx.fillRect(bx, by, 52, 46);
+          ctx.strokeRect(bx, by, 52, 46);
+
+          ctx.fillStyle = isCur ? '#040812' : (isDone ? '#a7f3d0' : '#94a3b8');
+          ctx.font = '700 20px "JetBrains Mono", monospace';
+          ctx.fillText(seqList[i].name, bx + 13, by + 30);
+        }
+
+        rubikHoloTex.needsUpdate = true;
+      }
+
+      function generateScrambleAndSolveSequence() {
+        resetCubiesToSolvedHome();
+
+        // Generate a 10-step WCA-valid scramble that is guaranteed NEVER to repeat any previous scramble!
+        let scramble = [];
+        let signature = '';
+        let safetyTries = 0;
+
+        do {
+          scramble = [];
+          let prevFace = '';
+          let prevPrevFace = '';
+          let prevAxis = '';
+
+          while (scramble.length < 10) {
+            const candidate = RUBIK_MOVE_POOL[getTrueRandomInt(RUBIK_MOVE_POOL.length)];
+            // Rule 1: Never turn the exact same face twice in a row (avoids R R' cancellation or R R redundancy)
+            if (candidate.face === prevFace) continue;
+            // Rule 2: Avoid parallel-axis A -> B -> A patterns (e.g. R -> L -> R')
+            if (candidate.axis === prevAxis && candidate.face === prevPrevFace) continue;
+
+            // Attach a realistic scramble duration (0.16s - 0.24s)
+            const scrambleMove = Object.assign({}, candidate, {
+              stepDuration: 0.17 + getTrueRandomFloat() * 0.06
+            });
+            scramble.push(scrambleMove);
+            prevPrevFace = prevFace;
+            prevFace = candidate.face;
+            prevAxis = candidate.axis;
+          }
+
+          signature = scramble.map((m) => m.name).join(' ');
+          safetyTries++;
+        } while (usedScrambleSignatures.has(signature) && safetyTries < 500);
+
+        usedScrambleSignatures.add(signature);
+        rubikState.roundCount++;
+        rubikState.currentSignature = signature;
+
+        // Build exact inverse solve sequence with realistic biomechanical + 40ms spike durations
+        // Each move duration = baseCost + stochastic biomechanical jitter, centered around ~0.38s/move (~3.80s total for 10 moves, varying between ~3.25s and ~4.35s each round!)
+        const rawSolve = scramble.slice().reverse().map((m) => {
+          const baseDef = MOVE_MAP[m.inv];
+          // Natural per-step variance: 40ms spike + (baseCost - 0.04) +/- 0.095s
+          const jitter = (getTrueRandomFloat() - 0.5) * 0.19;
+          const stepDur = Math.max(0.24, Math.min(0.54, baseDef.baseCost + jitter));
+          return Object.assign({}, baseDef, { stepDuration: stepDur });
+        });
+
+        rubikState.scrambleMoves = scramble;
+        rubikState.solveMoves = rawSolve;
+        rubikState.phase = 'SCRAMBLING';
+        rubikState.moveIndex = 0;
+        rubikState.moveProgress = 0;
+        rubikState.solveElapsed = 0.0;
+        rubikState.solvedHoldTimer = 0.0;
+        rubikState.activeMove = null;
+
+        startRubikMove(rubikState.scrambleMoves[0]);
+        updateRubikHUD();
+      }
+
+      function applyMoveInstant(moveDef) {
+        const axis = moveDef.axis;
+        const layer = moveDef.layer;
+        const axisVec = new THREE.Vector3(
+          axis === 'x' ? 1 : 0,
+          axis === 'y' ? 1 : 0,
+          axis === 'z' ? 1 : 0
+        );
+        const rotQuat = new THREE.Quaternion().setFromAxisAngle(axisVec, moveDef.dir * (Math.PI / 2));
+        rubikCubies.forEach((c) => {
+          if (Math.round(c.userData.gridPos[axis]) === layer) {
+            const newPos = c.position.clone().applyAxisAngle(axisVec, moveDef.dir * (Math.PI / 2));
+            const gx = Math.round(newPos.x / CUBIE_SPACING);
+            const gy = Math.round(newPos.y / CUBIE_SPACING);
+            const gz = Math.round(newPos.z / CUBIE_SPACING);
+            c.userData.gridPos.set(gx, gy, gz);
+            c.position.set(gx * CUBIE_SPACING, gy * CUBIE_SPACING, gz * CUBIE_SPACING);
+            c.quaternion.premultiply(rotQuat).normalize();
+          }
+        });
+      }
+
+      function jumpDirectlyToSolvingPhase() {
+        // Instantly apply all 10 non-repeating scramble moves so cube is 100% scrambled, then start timed solve!
+        resetCubiesToSolvedHome();
+        rubikState.scrambleMoves.forEach((m) => applyMoveInstant(m));
+        rubikState.phase = 'SOLVING';
+        rubikState.moveIndex = 0;
+        rubikState.moveProgress = 0;
+        rubikState.solveElapsed = 0.0;
+        startRubikMove(rubikState.solveMoves[0]);
+        triggerConnectomeSpikeBurst();
+        updateRubikHUD();
+      }
+
+      function startRubikMove(moveDef) {
+        if (!moveDef) return;
+        rubikState.activeMove = moveDef;
+        rubikState.moveProgress = 0;
+        const axis = moveDef.axis;
+        const layer = moveDef.layer;
+
+        rubikState.activeCubies = rubikCubies.filter(
+          (c) => Math.round(c.userData.gridPos[axis]) === layer
+        );
+        rubikState.activeCubies.forEach((c) => {
+          c.userData.startPos = c.position.clone();
+          c.userData.startQuat = c.quaternion.clone();
+        });
+      }
+
+      function finishCurrentRubikMove() {
+        const moveDef = rubikState.activeMove;
+        if (!moveDef) return;
+
+        const axisVec = new THREE.Vector3(
+          moveDef.axis === 'x' ? 1 : 0,
+          moveDef.axis === 'y' ? 1 : 0,
+          moveDef.axis === 'z' ? 1 : 0
+        );
+        const rotQuat = new THREE.Quaternion().setFromAxisAngle(axisVec, moveDef.dir * (Math.PI / 2));
+
+        rubikState.activeCubies.forEach((c) => {
+          const newPos = c.userData.startPos.clone().applyAxisAngle(axisVec, moveDef.dir * (Math.PI / 2));
+          const gx = Math.round(newPos.x / CUBIE_SPACING);
+          const gy = Math.round(newPos.y / CUBIE_SPACING);
+          const gz = Math.round(newPos.z / CUBIE_SPACING);
+          c.userData.gridPos.set(gx, gy, gz);
+          c.position.set(gx * CUBIE_SPACING, gy * CUBIE_SPACING, gz * CUBIE_SPACING);
+
+          c.quaternion.copy(rotQuat).multiply(c.userData.startQuat).normalize();
+        });
+
+        rubikState.activeMove = null;
+        rubikState.moveIndex++;
+
+        if (rubikState.phase === 'SCRAMBLING') {
+          if (rubikState.moveIndex < rubikState.scrambleMoves.length) {
+            startRubikMove(rubikState.scrambleMoves[rubikState.moveIndex]);
+          } else {
+            // Scramble finished! Transition immediately to SOLVING phase and start stopwatch!
+            rubikState.phase = 'SOLVING';
+            rubikState.moveIndex = 0;
+            rubikState.solveElapsed = 0.0;
+            startRubikMove(rubikState.solveMoves[0]);
+            triggerConnectomeSpikeBurst();
+          }
+        } else if (rubikState.phase === 'SOLVING') {
+          triggerConnectomeSpikeBurst();
+          playSpikeSound(820 + rubikState.moveIndex * 45);
+          if (rubikState.moveIndex < rubikState.solveMoves.length) {
+            startRubikMove(rubikState.solveMoves[rubikState.moveIndex]);
+          } else {
+            // All 10 inverse moves completed -> Cube is 100% SOLVED!
+            rubikState.phase = 'SOLVED';
+            rubikState.solvedHoldTimer = 0.0;
+            rubikState.lastSolveTime = rubikState.solveElapsed;
+            if (rubikState.solveElapsed > 0.5) {
+              rubikState.solveHistory.push(rubikState.solveElapsed);
+              if (rubikState.solveHistory.length > 20) rubikState.solveHistory.shift();
+              const sum = rubikState.solveHistory.reduce((a, b) => a + b, 0);
+              rubikState.avgSolveTime = sum / rubikState.solveHistory.length;
+              if (rubikState.solveElapsed < rubikState.bestSolveTime) {
+                rubikState.bestSolveTime = rubikState.solveElapsed;
+              }
+            }
+          }
+        }
+        updateRubikHUD();
+      }
+
+      function updateRubikHUD() {
+        const phaseBadge = document.getElementById('rubik-phase-badge');
+        const timerEl = document.getElementById('rubik-timer-display');
+        const bestEl = document.getElementById('rubik-best-display');
+        const stepsEl = document.getElementById('rubik-steps-display');
+        const seqTitle = document.getElementById('rubik-seq-title');
+        const curMoveEl = document.getElementById('rubik-current-move');
+
+        bestEl.textContent = `均${rubikState.avgSolveTime.toFixed(2)}s / 佳${rubikState.bestSolveTime.toFixed(2)}s`;
+
+        if (rubikState.phase === 'SCRAMBLING') {
+          phaseBadge.textContent = `🔀 第#${rubikState.roundCount}局打乱 (${rubikState.moveIndex + 1}/10)`;
+          phaseBadge.className = 'font-mono-tech text-[8.5px] px-1.5 py-0.5 rounded bg-rose-500/25 text-rose-300 font-bold';
+          timerEl.textContent = '00.00s (待命)';
+          stepsEl.textContent = `去重#${usedScrambleSignatures.size} · ${rubikState.moveIndex}/10`;
+          seqTitle.textContent = `① 第#${rubikState.roundCount}局唯一打乱顺序 (绝不重样):`;
+          curMoveEl.textContent = rubikState.activeMove ? `打乱: ${rubikState.activeMove.name}` : 'READY';
+
+          rubikPillEls.forEach((el, idx) => {
+            const m = rubikState.scrambleMoves[idx];
+            el.textContent = m ? m.name : '-';
+            if (idx < rubikState.moveIndex) {
+              el.className = 'text-center py-0.5 rounded-sm border border-rose-500/40 bg-rose-500/20 text-rose-200';
+            } else if (idx === rubikState.moveIndex) {
+              el.className = 'text-center py-0.5 rounded-sm border border-amber-400 bg-amber-400/30 text-white font-bold';
+            } else {
+              el.className = 'text-center py-0.5 rounded-sm border border-slate-700 bg-slate-900/80 text-slate-400';
+            }
+          });
+        } else if (rubikState.phase === 'SOLVING') {
+          phaseBadge.textContent = `⚡ 脑脉冲还原中 (${rubikState.moveIndex + 1}/10)`;
+          phaseBadge.className = 'font-mono-tech text-[8.5px] px-1.5 py-0.5 rounded bg-cyan-500/25 text-cyan-200 font-bold';
+          timerEl.textContent = `${rubikState.solveElapsed.toFixed(2).padStart(5, '0')}s`;
+          const curStepMs = rubikState.activeMove && rubikState.activeMove.stepDuration
+            ? Math.round(rubikState.activeMove.stepDuration * 1000)
+            : 380;
+          stepsEl.textContent = `40ms+${curStepMs - 40}ms`;
+          seqTitle.textContent = `② 逆向还原 (${rubikState.moveIndex + 1}/10步 · 均耗时~3.8s):`;
+          curMoveEl.textContent = rubikState.activeMove ? `动作: ${rubikState.activeMove.name} (${curStepMs}ms)` : 'DONE';
+
+          rubikPillEls.forEach((el, idx) => {
+            const m = rubikState.solveMoves[idx];
+            el.textContent = m ? m.name : '-';
+            if (idx < rubikState.moveIndex) {
+              el.className = 'text-center py-0.5 rounded-sm border border-emerald-500/40 bg-emerald-500/20 text-emerald-300';
+            } else if (idx === rubikState.moveIndex) {
+              el.className = 'text-center py-0.5 rounded-sm border border-cyan-400 bg-cyan-400/35 text-white font-bold shadow-[0_0_8px_#22d3ee]';
+            } else {
+              el.className = 'text-center py-0.5 rounded-sm border border-slate-700 bg-slate-900/80 text-slate-400';
+            }
+          });
+        } else {
+          phaseBadge.textContent = `✅ 第#${rubikState.roundCount}局已还原 (${rubikState.solveElapsed.toFixed(2)}s)`;
+          phaseBadge.className = 'font-mono-tech text-[8.5px] px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-200 font-bold';
+          timerEl.textContent = `${rubikState.solveElapsed.toFixed(2).padStart(5, '0')}s ✓`;
+          const finalTps = (10 / Math.max(0.1, rubikState.solveElapsed)).toFixed(2);
+          stepsEl.textContent = `10/10步 · ${finalTps}/s`;
+          seqTitle.textContent = `③ 第#${rubikState.roundCount}局6面已对齐 (下局生成新打乱):`;
+          curMoveEl.textContent = `本局 ${rubikState.solveElapsed.toFixed(2)}s ✓`;
+
+          rubikPillEls.forEach((el, idx) => {
+            const m = rubikState.solveMoves[idx];
+            el.textContent = m ? m.name : '-';
+            el.className = 'text-center py-0.5 rounded-sm border border-amber-400/60 bg-amber-400/20 text-amber-300 font-bold';
+          });
+        }
+
+        drawRubikHoloBillboard();
+      }
+
+      function stepRubikSolver(dt) {
+        if (rubikState.phase === 'SOLVED') {
+          rubikState.solvedHoldTimer += dt * state.tempo;
+          if (rubikState.solvedHoldTimer >= 3.0) {
+            generateScrambleAndSolveSequence();
+          }
+          return;
+        }
+
+        if (rubikState.phase === 'SOLVING') {
+          rubikState.solveElapsed += dt * state.tempo;
+        }
+
+        if (!rubikState.activeMove) return;
+
+        // Use the per-move stochastic biomechanical duration (40ms spike + ~300-440ms leg turn, averaging ~0.38s/move = ~3.80s/solve)
+        const moveDuration = rubikState.activeMove.stepDuration || (rubikState.phase === 'SCRAMBLING' ? 0.20 : 0.38);
+        rubikState.moveProgress += (dt * state.tempo) / moveDuration;
+
+        if (rubikState.moveProgress >= 1.0) {
+          finishCurrentRubikMove();
+        } else {
+          // Smooth cubic ease-in-out 90-degree slice rotation
+          const p = rubikState.moveProgress;
+          const eased = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+          const angle = rubikState.activeMove.dir * (Math.PI / 2) * eased;
+          const axisVec = new THREE.Vector3(
+            rubikState.activeMove.axis === 'x' ? 1 : 0,
+            rubikState.activeMove.axis === 'y' ? 1 : 0,
+            rubikState.activeMove.axis === 'z' ? 1 : 0
+          );
+          const rotQuat = new THREE.Quaternion().setFromAxisAngle(axisVec, angle);
+
+          rubikState.activeCubies.forEach((c) => {
+            c.position.copy(c.userData.startPos).applyAxisAngle(axisVec, angle);
+            c.quaternion.copy(rotQuat).multiply(c.userData.startQuat);
+          });
+
+          if (rubikState.phase === 'SOLVING') {
+            document.getElementById('rubik-timer-display').textContent = `${rubikState.solveElapsed.toFixed(2).padStart(5, '0')}s`;
+            drawRubikHoloBillboard();
+          }
+        }
+      }
+
+      // Initialize first scramble & solve sequence
+      generateScrambleAndSolveSequence();
+
+      // Initialize Stage 1 (69 Clues)
+      initSudokuStage(69);
+
+      // ==========================================
+      // 7. COMPOUND-EYE OMMATIDIA VISION RENDERER (POST 2 @nice11018)
+      // ==========================================
+      const ommatidiaCanvas = document.getElementById('ommatidia-canvas');
+      const ommCtx = ommatidiaCanvas.getContext('2d');
+
+      function renderCompoundEyeVision(simT) {
+        const w = ommatidiaCanvas.width;
+        const h = ommatidiaCanvas.height;
+        ommCtx.fillStyle = '#030914';
+        ommCtx.fillRect(0, 0, w, h);
+
+        const hexR = 6.2;
+        const dx = hexR * 1.75;
+        const dy = hexR * 1.52;
+
+        // Render Left Eye (cx = 68) and Right Eye (cx = 192) hexagonal ommatidia domes
+        [
+          { cx: 66, cy: 54, side: -1 },
+          { cx: 194, cy: 54, side: 1 }
+        ].forEach((eye) => {
+          for (let row = -5; row <= 5; row++) {
+            for (let col = -6; col <= 6; col++) {
+              const hx = eye.cx + col * dx + (row % 2 !== 0 ? dx * 0.5 : 0);
+              const hy = eye.cy + row * dy;
+              const dist = Math.hypot((hx - eye.cx) / 56, (hy - eye.cy) / 44);
+              if (dist > 1.0) continue;
+
+              // Simulate retinotopic stimulus in Blue & Yellow-Green spectrum (matching @nice11018 video!)
+              const wave = Math.sin(col * 0.65 + simT * 2.2 * eye.side) * Math.cos(row * 0.65 - simT * 1.8);
+              const isRubik = state.labMode === 'rubik';
+              let rCol = 15, gCol = 110, bCol = 210;
+              if (isRubik && Math.abs(col) <= 2 && Math.abs(row) <= 2) {
+                // Bright yellow-green & cyan cube facet stimulus in center of ommatidia field
+                rCol = Math.round(140 + wave * 80);
+                gCol = Math.round(230 + wave * 25);
+                bCol = Math.round(65 + (1 - wave) * 90);
+              } else {
+                // Blue / Yellow-Green compound eye receptor response
+                const intensity = (wave * 0.5 + 0.5) * (1 - dist * 0.45);
+                rCol = Math.round(20 + intensity * 125);
+                gCol = Math.round(95 + intensity * 155);
+                bCol = Math.round(140 + (1 - intensity) * 110);
+              }
+
+              ommCtx.beginPath();
+              for (let k = 0; k < 6; k++) {
+                const a = (k / 6) * Math.PI * 2 + Math.PI / 6;
+                const px = hx + Math.cos(a) * (hexR - 0.8);
+                const py = hy + Math.sin(a) * (hexR - 0.8);
+                if (k === 0) ommCtx.moveTo(px, py);
+                else ommCtx.lineTo(px, py);
+              }
+              ommCtx.closePath();
+              ommCtx.fillStyle = `rgb(${rCol}, ${gCol}, ${bCol})`;
+              ommCtx.fill();
+            }
+          }
+
+          // Outer ring border around each compound eye hemisphere
+          ommCtx.strokeStyle = 'rgba(34, 211, 238, 0.45)';
+          ommCtx.lineWidth = 1.2;
+          ommCtx.beginPath();
+          ommCtx.ellipse(eye.cx, eye.cy, 57, 45, 0, 0, Math.PI * 2);
+          ommCtx.stroke();
+        });
+      }
+
+      // ==========================================
+      // 8. 12 INTERACTIVE CALLOUT PINS ON 3D OVERLAY
+      // ==========================================
+      const annotationsLayer = document.getElementById('annotations-layer');
+      const calloutDefs = [
+        { key: 's01_optic_l', num: '01', label: '左视叶 OPTIC-L', anchorObj: s01OpticL, offset: new THREE.Vector3(-0.7, 0.4, 0.0) },
+        { key: 's02_optic_r', num: '02', label: '右视叶 OPTIC-R', anchorObj: s02OpticR, offset: new THREE.Vector3(0.7, 0.4, 0.0) },
+        { key: 's03_central_cx', num: '03', label: '中央复合体 CX', anchorObj: s03CentralCx, offset: new THREE.Vector3(0, 0.75, 0.0) },
+        { key: 's04_readout', num: '04', label: '脉冲解码 READOUT', anchorObj: s04Readout, offset: new THREE.Vector3(1.4, -0.1, 0.2) },
+        { key: 's05_eyes', num: '05', label: '复眼视觉 OMMATIDIA', anchorObj: s05Eyes, offset: new THREE.Vector3(-0.6, 0.35, 0.2) },
+        { key: 's06_head', num: '06', label: '触角传感 ANTENNA', anchorObj: s06Head, offset: new THREE.Vector3(0.55, 0.2, 0.4) },
+        { key: 's07_thorax', num: '07', label: '59维胸腔 59-DoF', anchorObj: s07Thorax, offset: new THREE.Vector3(-0.85, 0.3, 0.0) },
+        { key: 's08_wings', num: '08', label: '220Hz双翅 WINGS', anchorObj: s08Wings, offset: new THREE.Vector3(1.85, 0.35, -0.5) },
+        { key: 's09_halteres', num: '09', label: '平衡棒 HALTERES', anchorObj: s09Halteres, offset: new THREE.Vector3(-0.75, 0.1, -0.2) },
+        { key: 's10_legs', num: '10', label: '粘附六足 ADHESION', anchorObj: s10Legs, offset: new THREE.Vector3(1.05, -0.45, 0.4) },
+        { key: 's11_abdomen', num: '11', label: '呼吸腹节 ABDOMEN', anchorObj: s11Abdomen, offset: new THREE.Vector3(0, 0.35, -1.2) },
+        { key: 's12_arena', num: '12', label: '数独与魔方 ARENA', anchorObj: s12Arena, offset: new THREE.Vector3(-3.2, 0.2, 2.8) }
+      ];
+
+      const calloutElements = calloutDefs.map((def) => {
+        const info = SUBSYSTEM_INFO[def.key];
+        const el = document.createElement('div');
+        el.className = 'callout-pin flex items-center gap-1.5 group';
+        el.innerHTML = `
+          <div class="callout-dot" style="background: ${info.color}; color: ${info.color}; box-shadow: 0 0 10px ${info.color};"></div>
+          <div class="pin-tag hud-panel px-1.5 py-0.5 rounded-sm font-mono-tech text-[9px] tracking-wider whitespace-nowrap opacity-85 group-hover:opacity-100 transition-opacity" style="color: var(--text-main); border-color: ${info.color}66;">
+            <span style="color: ${info.color}; font-weight: 700;">${def.num}</span> ${def.label}
+          </div>
+        `;
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectSubsystem(def.key);
+        });
+        annotationsLayer.appendChild(el);
+        return { def, el };
+      });
+
+      // ==========================================
+      // 9. WEB AUDIO SPIKE SYNTHESIZER
+      // ==========================================
+      let audioCtx = null;
+      function initAudioIfNeeded() {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      }
+
+      function playSpikeSound(freq) {
+        if (!state.soundEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq || 880, now);
+        osc.frequency.exponentialRampToValueAtTime((freq || 880) * 1.4, now + 0.055);
+        gain.gain.setValueAtTime(0.03, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.065);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.07);
+      }
+
+      // ==========================================
+      // 10. UI CONTROLS & MODE SWITCHING
+      // ==========================================
+      function selectSubsystem(key) {
+        state.selectedPart = key || 'all';
+        const info = SUBSYSTEM_INFO[state.selectedPart] || SUBSYSTEM_INFO.all;
+        document.getElementById('part-code').textContent = info.code;
+        document.getElementById('part-badge').textContent = info.badge || 'NATURE 2024–2026';
+        document.getElementById('part-title').textContent = info.title;
+        document.getElementById('part-desc').textContent = info.desc;
+        document.getElementById('part-material').textContent = info.material;
+
+        calloutElements.forEach(({ def, el }) => {
+          el.classList.toggle('active-pin', def.key === state.selectedPart);
+        });
+        Object.keys(matrixButtons).forEach((k) => {
+          matrixButtons[k].classList.toggle('active', k === state.selectedPart);
+        });
+
+        const resetBtn = document.getElementById('btn-reset-focus');
+        if (state.selectedPart !== 'all' && info.camOffset) {
+          resetBtn.classList.remove('hidden');
+          camTargetSpherical.theta = info.camOffset.theta;
+          camTargetSpherical.phi = info.camOffset.phi;
+          camTargetSpherical.radius = info.camOffset.radius;
+          camTargetSpherical.target.copy(info.targetPos);
+          playSpikeSound(980);
+        } else {
+          resetBtn.classList.add('hidden');
+          camTargetSpherical.target.set(0, 1.35, 0.0);
+          camTargetSpherical.radius = 15.8;
+        }
+      }
+
+      document.getElementById('btn-reset-focus').addEventListener('click', () => selectSubsystem('all'));
+
+      function setLabMode(mode) {
+        state.labMode = mode;
+        ['mode-sudoku', 'mode-rubik', 'mode-flight'].forEach((id) => {
+          document.getElementById(id).classList.remove('active', 'active-gold');
+        });
+        document.getElementById(`mode-${mode}`).classList.add('active-gold');
+
+        if (mode === 'sudoku') {
+          rubikGroup.visible = false;
+          mujocoPedestalGroup.visible = false;
+          boardGroup.visible = true;
+          document.getElementById('lab-mode-badge').textContent = 'POST 01: SUDOKU';
+          document.getElementById('status-badge').textContent = '40ms SPIKING';
+          document.getElementById('vision-target-label').textContent = 'TRACKING: 9×9 SUDOKU';
+        } else if (mode === 'rubik') {
+          rubikGroup.visible = true;
+          mujocoPedestalGroup.visible = true;
+          // Hide the flat Sudoku plate in Rubik mode so the 3x3 Rubik's cube & fly legs NEVER collide with the board!
+          boardGroup.visible = false;
+          document.getElementById('lab-mode-badge').textContent = 'POST 02: RUBIK SOLVER';
+          document.getElementById('status-badge').textContent = 'SCRAMBLE & SOLVE';
+          document.getElementById('vision-target-label').textContent = 'SOLVING: 3×3 RUBIK CUBE';
+        } else {
+          rubikGroup.visible = false;
+          mujocoPedestalGroup.visible = false;
+          boardGroup.visible = true;
+          document.getElementById('lab-mode-badge').textContent = 'POST 02: 220Hz FLIGHT';
+          document.getElementById('status-badge').textContent = 'VISION FLIGHT';
+          document.getElementById('vision-target-label').textContent = 'OPTIC FLOW NAVIGATION';
+        }
+      }
+
+      document.getElementById('mode-sudoku').addEventListener('click', () => setLabMode('sudoku'));
+      document.getElementById('mode-rubik').addEventListener('click', () => {
+        setLabMode('rubik');
+        generateScrambleAndSolveSequence();
+      });
+      document.getElementById('mode-flight').addEventListener('click', () => setLabMode('flight'));
+
+      document.getElementById('btn-rubik-scramble').addEventListener('click', () => {
+        if (state.labMode !== 'rubik') setLabMode('rubik');
+        generateScrambleAndSolveSequence();
+      });
+      document.getElementById('btn-rubik-solve-now').addEventListener('click', () => {
+        if (state.labMode !== 'rubik') setLabMode('rubik');
+        jumpDirectlyToSolvingPhase();
+      });
+      document.getElementById('btn-rubik-step').addEventListener('click', () => {
+        if (state.labMode !== 'rubik') setLabMode('rubik');
+        if (rubikState.phase === 'SOLVED') {
+          generateScrambleAndSolveSequence();
+        } else {
+          finishCurrentRubikMove();
+        }
+      });
+
+      // Default to Rubik's Cube Solver mode on startup so the user immediately sees the non-clipping 3x3 Rubik's cube scramble, solve & timer!
+      setLabMode('rubik');
+
+      // Stage buttons & single step
+      document.getElementById('btn-stage-69').addEventListener('click', () => initSudokuStage(69));
+      document.getElementById('btn-stage-51').addEventListener('click', () => initSudokuStage(51));
+      document.getElementById('btn-stage-36').addEventListener('click', () => initSudokuStage(36));
+      document.getElementById('btn-step-sudoku').addEventListener('click', () => stepNextSudokuCell());
+      document.getElementById('btn-reset-sudoku').addEventListener('click', () => initSudokuStage(state.sudokuStage));
+
+      // Sliders
+      const sliderDim = document.getElementById('slider-dim');
+      const dimPct = document.getElementById('dim-pct');
+      function setDimensionTarget(val, moveCam) {
+        state.targetDim = val / 100;
+        sliderDim.value = val;
+        const pct = Math.round(val);
+        dimPct.textContent = pct === 0 ? '2D FLAT' : (pct === 100 ? '100% 3D' : `${pct}% 2D→3D`);
+        if (moveCam) {
+          if (pct < 25) {
+            camTargetSpherical.theta = 0.0;
+            camTargetSpherical.phi = Math.PI / 2;
+            camTargetSpherical.radius = 16.5;
+            camTargetSpherical.target.set(0, 1.35, 0);
+          } else {
+            camTargetSpherical.theta = 0.48;
+            camTargetSpherical.phi = 1.12;
+            camTargetSpherical.radius = 15.8;
+            camTargetSpherical.target.set(0, 1.35, 0);
+          }
+        }
+      }
+      sliderDim.addEventListener('input', (e) => setDimensionTarget(parseFloat(e.target.value), false));
+      document.getElementById('btn-2d-flat').addEventListener('click', () => setDimensionTarget(0, true));
+      document.getElementById('btn-3d-pop').addEventListener('click', () => setDimensionTarget(100, true));
+
+      const sliderTempo = document.getElementById('slider-tempo');
+      const tempoPct = document.getElementById('tempo-pct');
+      sliderTempo.addEventListener('input', (e) => {
+        state.tempo = parseFloat(e.target.value) / 100;
+        tempoPct.textContent = `${state.tempo.toFixed(1)}x (40ms)`;
+      });
+
+      const sliderExplode = document.getElementById('slider-explode');
+      const explodePct = document.getElementById('explode-pct');
+      function setExplodeTarget(val) {
+        state.targetExplode = val / 100;
+        sliderExplode.value = val;
+        explodePct.textContent = `${Math.round(val)}%`;
+      }
+      sliderExplode.addEventListener('input', (e) => setExplodeTarget(parseFloat(e.target.value)));
+      document.getElementById('btn-assembled').addEventListener('click', () => setExplodeTarget(0));
+      document.getElementById('btn-exploded').addEventListener('click', () => setExplodeTarget(100));
+
+      // Camera Presets
+      const camPresets = {
+        'cam-iso': { theta: 0.48, phi: 1.12, radius: 15.8, target: new THREE.Vector3(0, 1.35, 0) },
+        'cam-brain': { theta: 0.22, phi: 1.05, radius: 9.2, target: new THREE.Vector3(0, 3.65, 0) },
+        'cam-board': { theta: 0.05, phi: 0.42, radius: 14.5, target: new THREE.Vector3(0, 0.0, 0) },
+        'cam-profile': { theta: Math.PI / 2, phi: 1.32, radius: 14.5, target: new THREE.Vector3(0, 1.2, 0) }
+      };
+      Object.keys(camPresets).forEach((btnId) => {
+        document.getElementById(btnId).addEventListener('click', () => {
+          Object.keys(camPresets).forEach((id) => document.getElementById(id).classList.remove('active'));
+          document.getElementById(btnId).classList.add('active');
+          const p = camPresets[btnId];
+          camTargetSpherical.theta = p.theta;
+          camTargetSpherical.phi = p.phi;
+          camTargetSpherical.radius = p.radius;
+          camTargetSpherical.target.copy(p.target);
+        });
+      });
+
+      document.getElementById('btn-orbit').addEventListener('click', (e) => {
+        state.autoOrbit = !state.autoOrbit;
+        e.currentTarget.classList.toggle('active', state.autoOrbit);
+      });
+
+      const btnQuadView = document.getElementById('btn-quad-view');
+      const quadOverlay = document.getElementById('quad-overlay');
+      btnQuadView.addEventListener('click', () => {
+        state.quadView = !state.quadView;
+        btnQuadView.classList.toggle('active', state.quadView);
+        quadOverlay.classList.toggle('hidden', !state.quadView);
+        annotationsLayer.classList.toggle('hidden', state.quadView || !state.showAnnotations);
+      });
+
+      const btnAnnotations = document.getElementById('btn-annotations');
+      btnAnnotations.addEventListener('click', () => {
+        state.showAnnotations = !state.showAnnotations;
+        btnAnnotations.classList.toggle('active', state.showAnnotations);
+        btnAnnotations.querySelector('span:last-child').textContent = state.showAnnotations ? '12 PINS: ON' : '12 PINS: OFF';
+        annotationsLayer.classList.toggle('hidden', state.quadView || !state.showAnnotations);
+      });
+
+      const btnSound = document.getElementById('btn-sound');
+      btnSound.addEventListener('click', () => {
+        initAudioIfNeeded();
+        state.soundEnabled = !state.soundEnabled;
+        btnSound.classList.toggle('active', state.soundEnabled);
+        document.getElementById('sound-label').textContent = state.soundEnabled ? 'SPIKE AUDIO: ON' : 'SPIKE AUDIO: OFF';
+        document.getElementById('sound-indicator').style.background = state.soundEnabled ? '#fbbf24' : '#64748b';
+      });
+
+      // Themes
+      const themes = {
+        'theme-flywire': { name: 'flywire', bodyClass: '', amber: 0xd97706, cyan: 0x22d3ee, gold: 0xfbbf24 },
+        'theme-mujoco': { name: 'mujoco', bodyClass: 'theme-mujoco', amber: 0x059669, cyan: 0x22d3ee, gold: 0xa3e635 },
+        'theme-biolum': { name: 'biolum', bodyClass: 'theme-biolum', amber: 0x9333ea, cyan: 0x38bdf8, gold: 0xf43f5e },
+        'theme-nature': { name: 'nature', bodyClass: 'theme-nature', amber: 0xb45309, cyan: 0x38bdf8, gold: 0xf59e0b }
+      };
+
+      function applyThemeById(tId) {
+        Object.keys(themes).forEach((id) => document.getElementById(id).classList.remove('active-gold'));
+        document.getElementById(tId).classList.add('active-gold');
+        const cfg = themes[tId];
+        state.theme = cfg.name;
+        document.body.className = `blueprint-grid ${cfg.bodyClass}`.trim();
+        mats.chitinAmber.color.setHex(cfg.amber);
+        mats.cyanNeuron.color.setHex(cfg.cyan);
+        mats.goldSpike.color.setHex(cfg.gold);
+        scene.environment = buildLabEnvMap(cfg.name);
+      }
+
+      Object.keys(themes).forEach((tId) => {
+        document.getElementById(tId).addEventListener('click', () => applyThemeById(tId));
+      });
+
+      // ==========================================
+      // 11. 120-SECOND (2-MINUTE) 6-ACT DIRECTOR SHOWREEL & RECORDER
+      // ==========================================
+      const btnAutoDemo = document.getElementById('btn-auto-demo');
+      const demoBtnLabel = document.getElementById('demo-btn-label');
+      const demoBanner = document.getElementById('demo-banner');
+      const demoActLabel = document.getElementById('demo-act-label');
+      const demoTimeLabel = document.getElementById('demo-time-label');
+      const demoProgressBar = document.getElementById('demo-progress-bar');
+      const demoScrubber = document.getElementById('demo-scrubber');
+      const demoChapterSpecs = [
+        { id: 'btn-act-1', start: 0, end: 12 },
+        { id: 'btn-act-2', start: 12, end: 36 },
+        { id: 'btn-act-3', start: 36, end: 64 },
+        { id: 'btn-act-4', start: 64, end: 100 },
+        { id: 'btn-act-5', start: 100, end: 112 },
+        { id: 'btn-act-6', start: 112, end: 121 }
+      ];
+
+      function formatMMSS(sec) {
+        const m = Math.floor(sec / 60);
+        const s = (sec % 60).toFixed(1).padStart(4, '0');
+        return `${String(m).padStart(2, '0')}:${s}`;
+      }
+
+      function startAutoDemo(startSec) {
+        state.demoActive = true;
+        state.demoElapsed = typeof startSec === 'number' ? startSec : 0;
+        btnAutoDemo.classList.add('active');
+        demoBtnLabel.textContent = 'STOP DEMO (120s)';
+        demoBanner.classList.remove('hidden');
+      }
+
+      function stopAutoDemo() {
+        state.demoActive = false;
+        btnAutoDemo.classList.remove('active');
+        demoBtnLabel.textContent = 'AUTO DEMO (120s / 2MIN)';
+        demoBanner.classList.add('hidden');
+        scanPlaneMat.opacity = 0;
+        if (state.quadView) {
+          state.quadView = false;
+          btnQuadView.classList.remove('active');
+          quadOverlay.classList.add('hidden');
+          annotationsLayer.classList.toggle('hidden', !state.showAnnotations);
+        }
+      }
+
+      btnAutoDemo.addEventListener('click', () => {
+        if (state.demoActive) stopAutoDemo();
+        else startAutoDemo(0);
+      });
+
+      if (demoScrubber) {
+        demoScrubber.addEventListener('input', (e) => {
+          const targetSec = parseFloat(e.target.value) || 0;
+          if (!state.demoActive) startAutoDemo(targetSec);
+          else state.demoElapsed = targetSec;
+        });
+      }
+
+      demoChapterSpecs.forEach((spec) => {
+        const btn = document.getElementById(spec.id);
+        if (btn) {
+          btn.addEventListener('click', () => {
+            if (!state.demoActive) startAutoDemo(spec.start);
+            else state.demoElapsed = spec.start;
+          });
+        }
+      });
+
+      function highlightActiveChapter(t) {
+        demoChapterSpecs.forEach((spec) => {
+          const btn = document.getElementById(spec.id);
+          if (btn) {
+            btn.classList.toggle('active-gold', t >= spec.start && t < spec.end);
+          }
+        });
+      }
+
+      function updateDirectorDemo(dt) {
+        if (!state.demoActive) return;
+        state.demoElapsed += dt;
+        if (state.demoElapsed >= state.demoDuration) {
+          if (state.isRecording) {
+            stopVideoRecording();
+            stopAutoDemo();
+            return;
+          }
+          state.demoElapsed = 0;
+        }
+
+        const t = state.demoElapsed;
+        const pct = Math.min(100, (t / state.demoDuration) * 100);
+        demoProgressBar.style.width = `${pct.toFixed(1)}%`;
+        if (demoScrubber) demoScrubber.value = t.toFixed(1);
+        demoTimeLabel.textContent = `${formatMMSS(t)} / 02:00.0 (${t.toFixed(1)}s/120s)`;
+        highlightActiveChapter(t);
+
+        if (t < 12.0) {
+          // ACT I (0.0s - 12.0s, 12s): 2D Connectome Wiring Diagram (0-3.5s) -> Laser Scan 2D→3D Embodied Brain & Flybody (3.5-12.0s)
+          if (state.labMode !== 'sudoku') setLabMode('sudoku');
+          if (state.selectedPart !== 'all') selectSubsystem('all');
+          setExplodeTarget(0);
+
+          if (t < 3.5) {
+            demoActLabel.textContent = 'ACT I (00:00–00:12) // 2D FLYWIRE CONNECTOME WIRING DIAGRAM (0% 平面图谱)';
+            setDimensionTarget(0, false);
+            camTargetSpherical.theta = Math.sin(t * 0.7) * 0.08;
+            camTargetSpherical.phi = Math.PI / 2;
+            camTargetSpherical.radius = 16.5;
+            camTargetSpherical.target.set(0, 1.4, 0);
+            scanPlaneMat.opacity = 0;
+          } else {
+            const p = Math.min(1, (t - 3.5) / 8.0);
+            demoActLabel.textContent = `ACT I (00:00–00:12) // 2D → 3D EMBODIED ASCENSION (全脑与果蝇立体升维 ${Math.round(p * 100)}%)`;
+            setDimensionTarget(Math.round(p * 100), false);
+            camTargetSpherical.theta = p * 0.48;
+            camTargetSpherical.phi = Math.PI / 2 - p * 0.40;
+            camTargetSpherical.radius = 16.5 - p * 1.2;
+            camTargetSpherical.target.set(0, 1.35, 0);
+            scanLaserPlane.position.y = -1.5 + p * 6.5;
+            scanPlaneMat.opacity = Math.sin(p * Math.PI) * 0.85;
+          }
+        } else if (t < 36.0) {
+          // ACT II (12.0s - 36.0s, 24s): POST 01 (@smjain) — FlyWire 138,639-Neuron Connectome Playing 9x9 Sudoku
+          // 8 seconds per stage: Stage 1 (69 Clues: 12-20s) -> Stage 2 (51 Clues: 20-28s) -> Stage 3 (36 Clues: 28-36s)
+          scanPlaneMat.opacity = 0;
+          setDimensionTarget(100, false);
+          setExplodeTarget(0);
+          if (state.selectedPart !== 'all') selectSubsystem('all');
+          if (state.labMode !== 'sudoku') setLabMode('sudoku');
+
+          const subT = t - 12.0; // 0..24.0s
+          if (subT < 8.0 && state.sudokuStage !== 69) initSudokuStage(69);
+          else if (subT >= 8.0 && subT < 16.0 && state.sudokuStage !== 51) initSudokuStage(51);
+          else if (subT >= 16.0 && state.sudokuStage !== 36) initSudokuStage(36);
+
+          const stageIdx = state.sudokuStage === 69 ? 1 : (state.sudokuStage === 51 ? 2 : 3);
+          demoActLabel.textContent = `ACT II (00:12–00:36) // POST 01 (@smjain): 9×9 SUDOKU STAGE ${stageIdx}/3 (${state.sudokuStage} CLUES · 40ms SPIKES)`;
+          camTargetSpherical.theta = 0.46 + Math.sin(subT * 0.35) * 0.42;
+          camTargetSpherical.phi = 0.94 + Math.cos(subT * 0.25) * 0.10;
+          camTargetSpherical.radius = 14.6;
+          camTargetSpherical.target.set(0, 1.15, 0);
+        } else if (t < 64.0) {
+          // ACT III (36.0s - 64.0s, 28s): POST 02 (@nice11018) — DeepMind/Janelia flybody 59-DoF
+          // Part A (36.0s - 56.0s, 20s): 2 Full Rounds of Non-Repeating 3x3 Rubik's Cube Scramble + Timed Neural Solve + 360° Solved Showcase!
+          // Part B (56.0s - 64.0s, 8s): 220Hz Vision-Guided Free Flight & 721-Ommatidia Retinotopic Vision Render!
+          scanPlaneMat.opacity = 0;
+          setDimensionTarget(100, false);
+          setExplodeTarget(0);
+          if (state.selectedPart !== 'all') selectSubsystem('all');
+
+          const subT = t - 36.0; // 0..28.0s
+          if (subT < 20.0) {
+            if (state.labMode !== 'rubik') {
+              setLabMode('rubik');
+              generateScrambleAndSolveSequence();
+            }
+            demoActLabel.textContent = `ACT III-A (00:36–00:56) // POST 02 (@nice11018): 59-DoF 魔方真随机打乱与计时还原 (第#${rubikState.roundCount}局)`;
+            camTargetSpherical.theta = 0.52 + Math.sin(subT * 0.32) * 0.28;
+            camTargetSpherical.phi = 1.18;
+            camTargetSpherical.radius = 9.4;
+            camTargetSpherical.target.set(0.35, 0.22, 0.35);
+          } else {
+            if (state.labMode !== 'flight') setLabMode('flight');
+            const fT = subT - 20.0;
+            demoActLabel.textContent = 'ACT III-B (00:56–01:04) // POST 02 (@nice11018): 220Hz 视觉引导自由扑翼飞行 & 复眼渲染';
+            camTargetSpherical.theta = -0.45 + fT * 0.22;
+            camTargetSpherical.phi = 1.10;
+            camTargetSpherical.radius = 11.2;
+            camTargetSpherical.target.set(0, 0.95, 0.2);
+          }
+        } else if (t < 100.0) {
+          // ACT IV (64.0s - 100.0s, 36s): 12-Subsystem Deep Inspection Tour (01 -> 12, 3.0 FULL SECONDS per subsystem!)
+          scanPlaneMat.opacity = 0;
+          setDimensionTarget(100, false);
+          if (state.labMode !== 'rubik') setLabMode('rubik');
+
+          const tourT = t - 64.0; // 0..36.0s
+          const idx = Math.min(11, Math.floor(tourT / 3.0));
+          const subStep = (tourT % 3.0) / 3.0; // 0..1 within each 3.0s window
+          const key = PART_KEYS[idx];
+          const info = SUBSYSTEM_INFO[key];
+
+          demoActLabel.textContent = `ACT IV (01:04–01:40) // 12部位深度巡检 [${info.num}/12] ${info.title}`;
+          if (state.selectedPart !== key) selectSubsystem(key);
+
+          const expVal = idx < 4 ? 35 : (idx < 9 ? 75 : 45);
+          setExplodeTarget(expVal);
+
+          // Gentle orbital drift around the focused subsystem's camera angle during its 3.0s spotlight
+          if (info.camOffset) {
+            camTargetSpherical.theta = info.camOffset.theta + (subStep - 0.5) * 0.26;
+            camTargetSpherical.phi = info.camOffset.phi;
+            camTargetSpherical.radius = info.camOffset.radius;
+          }
+        } else if (t < 112.0) {
+          // ACT V (100.0s - 112.0s, 12s): 100% 12-Subsystem Exploded View + 4 Themes Showcase (100-106s) + 4-Viewport CAD Split (106-112s)
+          scanPlaneMat.opacity = 0;
+          if (state.selectedPart !== 'all') selectSubsystem('all');
+          if (state.labMode !== 'sudoku') setLabMode('sudoku');
+
+          const subT = t - 100.0; // 0..12.0s
+          setExplodeTarget(subT < 6.0 ? 100 : 28);
+
+          if (subT < 2.0 && state.theme !== 'mujoco') applyThemeById('theme-mujoco');
+          else if (subT >= 2.0 && subT < 4.0 && state.theme !== 'biolum') applyThemeById('theme-biolum');
+          else if (subT >= 4.0 && subT < 6.0 && state.theme !== 'nature') applyThemeById('theme-nature');
+          else if (subT >= 6.0 && state.theme !== 'flywire') applyThemeById('theme-flywire');
+
+          const showQuad = (subT >= 6.0);
+          if (state.quadView !== showQuad) {
+            state.quadView = showQuad;
+            btnQuadView.classList.toggle('active', showQuad);
+            quadOverlay.classList.toggle('hidden', !showQuad);
+            annotationsLayer.classList.toggle('hidden', showQuad || !state.showAnnotations);
+          }
+          demoActLabel.textContent = showQuad
+            ? 'ACT V-B (01:46–01:52) // 4-VIEWPORT CONNECTOME & MUJOCO CAD BLUEPRINT (四视图工程同屏)'
+            : 'ACT V-A (01:40–01:46) // 100% 12-SUBSYSTEM EXPLODED DISASSEMBLY & 4 THEMES (全机100%爆炸拆解)';
+          camTargetSpherical.theta = 0.35 + subT * 0.18;
+          camTargetSpherical.phi = 1.12;
+          camTargetSpherical.radius = 16.0;
+          camTargetSpherical.target.set(0, 1.35, 0);
+        } else {
+          // ACT VI (112.0s - 120.0s, 8s): Grand Finale Reassembly & Full-Lab Hero Orbit
+          if (state.quadView) {
+            state.quadView = false;
+            btnQuadView.classList.remove('active');
+            quadOverlay.classList.add('hidden');
+            annotationsLayer.classList.toggle('hidden', !state.showAnnotations);
+          }
+          if (state.selectedPart !== 'all') selectSubsystem('all');
+          if (state.labMode !== 'rubik') setLabMode('rubik');
+          setExplodeTarget(0);
+          setDimensionTarget(100, false);
+
+          const finT = t - 112.0;
+          demoActLabel.textContent = 'ACT VI (01:52–02:00) // GRAND FINALE: FLYWIRE 139K NEURONS × FLYBODY 59-DoF';
+          camTargetSpherical.theta = 0.48 + finT * 0.14;
+          camTargetSpherical.phi = 1.12;
+          camTargetSpherical.radius = 15.2;
+          camTargetSpherical.target.set(0, 1.25, 0);
+        }
+      }
+
+      // ==========================================
+      // 12. COMPOSITE VIDEO RECORDER & COVER STUDIO
+      // ==========================================
+      const recCanvas = document.createElement('canvas');
+      const recCtx = recCanvas.getContext('2d');
+      let mediaRecorder = null;
+      let recordedChunks = [];
+
+      function fillWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
+        const chars = Array.from(text);
+        let line = '';
+        let curY = y;
+        for (let i = 0; i < chars.length; i++) {
+          const testLine = line + chars[i];
+          if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
+            ctx.fillText(line, x, curY);
+            line = chars[i];
+            curY += lineHeight;
+          } else {
+            line = testLine;
+          }
+        }
+        if (line.length > 0) {
+          ctx.fillText(line, x, curY);
+          curY += lineHeight;
+        }
+        return curY;
+      }
+
+      function drawHUDCompositeOnto(ctx, w, h, cam, bannerText) {
+        const scale = Math.min(w / 1280, h / 720);
+        const pad = Math.round(16 * scale);
+        const panelBg = 'rgba(7, 14, 28, 0.88)';
+
+        ctx.save();
+        // 1. Project & Draw 12 Callout Pins
+        if (!state.quadView && state.showAnnotations) {
+          const vProj = new THREE.Vector3();
+          calloutDefs.forEach((def) => {
+            const info = SUBSYSTEM_INFO[def.key];
+            def.anchorObj.getWorldPosition(vProj);
+            vProj.add(def.offset);
+            vProj.project(cam);
+            if (vProj.z <= 1) {
+              const sx = (vProj.x * 0.5 + 0.5) * w;
+              const sy = (-vProj.y * 0.5 + 0.5) * h;
+              const isSel = (state.selectedPart === def.key);
+
+              ctx.beginPath();
+              ctx.arc(sx, sy, (isSel ? 7 : 4.5) * scale, 0, Math.PI * 2);
+              ctx.fillStyle = isSel ? '#fbbf24' : info.color;
+              ctx.fill();
+
+              ctx.font = `600 ${Math.round(9 * scale)}px "JetBrains Mono", "Microsoft YaHei", sans-serif`;
+              const txt = `${def.num} ${def.label}`;
+              const tw = ctx.measureText(txt).width + Math.round(12 * scale);
+              const th = Math.round(18 * scale);
+              const bx = Math.min(w - tw - 8, Math.max(8, sx + Math.round(9 * scale)));
+              const by = Math.min(h - th - 8, Math.max(8, sy - Math.round(9 * scale)));
+
+              ctx.fillStyle = isSel ? 'rgba(251, 191, 36, 0.32)' : panelBg;
+              ctx.strokeStyle = isSel ? '#fbbf24' : info.color;
+              ctx.lineWidth = isSel ? 1.8 : 1.0;
+              ctx.fillRect(bx, by, tw, th);
+              ctx.strokeRect(bx, by, tw, th);
+
+              ctx.fillStyle = isSel ? '#fbbf24' : info.color;
+              ctx.fillText(def.num, bx + Math.round(4 * scale), by + Math.round(13 * scale));
+              ctx.fillStyle = '#f8fafc';
+              ctx.fillText(def.label, bx + Math.round(20 * scale), by + Math.round(13 * scale));
+            }
+          });
+        }
+
+        // 2. Top-Left Title Box
+        const boxW = Math.round(415 * scale);
+        const boxH = Math.round(72 * scale);
+        ctx.fillStyle = panelBg;
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(pad, pad, boxW, boxH);
+        ctx.strokeRect(pad, pad, boxW, boxH);
+
+        ctx.fillStyle = '#22d3ee';
+        ctx.font = `600 ${Math.round(9 * scale)}px "JetBrains Mono", monospace`;
+        ctx.fillText('FIG. 18 — FLYWIRE 138,639 NEURONS × FLYBODY 59-DoF LAB', pad + Math.round(10 * scale), pad + Math.round(18 * scale));
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = `italic 600 ${Math.round(19 * scale)}px "Cormorant Garamond", "Microsoft YaHei", serif`;
+        ctx.fillText('FlyWire × flybody · 具身果蝇脑连接组与物理实验室', pad + Math.round(10 * scale), pad + Math.round(42 * scale));
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = `400 ${Math.round(8.5 * scale)}px "JetBrains Mono", monospace`;
+        ctx.fillText('@smjain 9×9 SUDOKU SPIKES + @nice11018 DEEPMIND MUJOCO RUBIK & VISION', pad + Math.round(10 * scale), pad + Math.round(60 * scale));
+
+        // 3. Left Inspector Card
+        const cardY = pad + boxH + Math.round(10 * scale);
+        const leftW = Math.round(270 * scale);
+        const cardH = Math.round(165 * scale);
+        ctx.fillStyle = panelBg;
+        ctx.strokeStyle = 'rgba(34, 211, 238, 0.5)';
+        ctx.fillRect(pad, cardY, leftW, cardH);
+        ctx.strokeRect(pad, cardY, leftW, cardH);
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = `600 ${Math.round(9 * scale)}px "JetBrains Mono", monospace`;
+        ctx.fillText(document.getElementById('part-code').textContent, pad + Math.round(10 * scale), cardY + Math.round(18 * scale));
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = `600 ${Math.round(13.5 * scale)}px "Inter", "Microsoft YaHei", sans-serif`;
+        ctx.fillText(document.getElementById('part-title').textContent, pad + Math.round(10 * scale), cardY + Math.round(38 * scale));
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = `400 ${Math.round(9.5 * scale)}px "Inter", "Microsoft YaHei", sans-serif`;
+        fillWrappedText(ctx, document.getElementById('part-desc').textContent, pad + Math.round(10 * scale), cardY + Math.round(58 * scale), leftW - Math.round(20 * scale), Math.round(15 * scale));
+
+        // 4. Right Compound-Eye Vision PIP onto recorded frame
+        const ommW = Math.round(220 * scale);
+        const ommH = Math.round(95 * scale);
+        const ommX = w - pad - ommW;
+        const ommY = pad + Math.round(48 * scale);
+        ctx.fillStyle = panelBg;
+        ctx.strokeStyle = '#10b981';
+        ctx.fillRect(ommX - 4, ommY - 20, ommW + 8, ommH + 24);
+        ctx.strokeRect(ommX - 4, ommY - 20, ommW + 8, ommH + 24);
+        ctx.fillStyle = '#10b981';
+        ctx.font = `600 ${Math.round(8.5 * scale)}px "JetBrains Mono", monospace`;
+        ctx.fillText('OMMATIDIA VISION INPUT RENDER', ommX, ommY - 6);
+        ctx.drawImage(ommatidiaCanvas, ommX, ommY, ommW, ommH);
+
+        // 4B. Rubik's Cube Scramble/Solve Stopwatch Overlay Box on Right
+        const rubY = ommY + ommH + Math.round(14 * scale);
+        const rubH = Math.round(64 * scale);
+        ctx.fillStyle = panelBg;
+        ctx.strokeStyle = '#22d3ee';
+        ctx.fillRect(ommX - 4, rubY, ommW + 8, rubH);
+        ctx.strokeRect(ommX - 4, rubY, ommW + 8, rubH);
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = `600 ${Math.round(9 * scale)}px "JetBrains Mono", "Microsoft YaHei", sans-serif`;
+        ctx.fillText(document.getElementById('rubik-phase-badge').textContent, ommX + 4, rubY + Math.round(18 * scale));
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = `700 ${Math.round(11.5 * scale)}px "JetBrains Mono", monospace`;
+        ctx.fillText('TIME: ' + document.getElementById('rubik-timer-display').textContent + ' | BEST: ' + rubikState.bestSolveTime.toFixed(2) + 's', ommX + 4, rubY + Math.round(38 * scale));
+        ctx.fillStyle = '#22d3ee';
+        ctx.font = `500 ${Math.round(8.5 * scale)}px "JetBrains Mono", "Microsoft YaHei", sans-serif`;
+        ctx.fillText(document.getElementById('rubik-steps-display').textContent + ' · ' + document.getElementById('rubik-current-move').textContent, ommX + 4, rubY + Math.round(54 * scale));
+
+        // 5. Top-Center Banner
+        if (bannerText) {
+          const banW = Math.round(450 * scale);
+          const banH = Math.round(36 * scale);
+          const banX = Math.round((w - banW) * 0.5);
+          ctx.fillStyle = panelBg;
+          ctx.strokeStyle = '#22d3ee';
+          ctx.fillRect(banX, pad, banW, banH);
+          ctx.strokeRect(banX, pad, banW, banH);
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = `600 ${Math.round(9.5 * scale)}px "JetBrains Mono", "Microsoft YaHei", sans-serif`;
+          ctx.fillText(bannerText, banX + Math.round(10 * scale), pad + Math.round(22 * scale));
+        }
+        ctx.restore();
+      }
+
+      const btnRecVideo = document.getElementById('btn-rec-video');
+      const recBtnLabel = document.getElementById('rec-btn-label');
+      const recToast = document.getElementById('rec-toast');
+      const recToastText = document.getElementById('rec-toast-text');
+
+      function startVideoRecording() {
+        if (state.isRecording) return;
+        try {
+          const w = renderer.domElement.width;
+          const h = renderer.domElement.height;
+          recCanvas.width = w;
+          recCanvas.height = h;
+          const stream = recCanvas.captureStream(60);
+          const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
+          let selectedMime = '';
+          for (const m of mimeTypes) {
+            if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) {
+              selectedMime = m;
+              break;
+            }
+          }
+          recordedChunks = [];
+          mediaRecorder = selectedMime
+            ? new MediaRecorder(stream, { mimeType: selectedMime, videoBitsPerSecond: 8000000 })
+            : new MediaRecorder(stream);
+
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+          };
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: selectedMime || 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const ext = (selectedMime && selectedMime.includes('mp4')) ? 'mp4' : 'webm';
+            a.href = url;
+            a.download = `flywire_flybody_lab_120s.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            recToastText.textContent = 'VIDEO EXPORTED: flywire_flybody_lab_120s.' + ext;
+            setTimeout(() => recToast.classList.add('hidden'), 3500);
+          };
+
+          state.isRecording = true;
+          mediaRecorder.start(100);
+          btnRecVideo.classList.add('active');
+          recBtnLabel.textContent = 'STOP & SAVE';
+          recToast.classList.remove('hidden');
+          recToastText.textContent = 'RECORDING 120s (2-MIN) FULL SHOWREEL (CLICK STOP ANYTIME TO SAVE)...';
+          if (!state.demoActive) startAutoDemo();
+        } catch (err) {
+          recToast.classList.remove('hidden');
+          recToastText.textContent = 'RECORDING UNAVAILABLE IN THIS CONTEXT';
+          setTimeout(() => recToast.classList.add('hidden'), 3000);
+        }
+      }
+
+      function stopVideoRecording() {
+        if (!state.isRecording) return;
+        state.isRecording = false;
+        btnRecVideo.classList.remove('active');
+        recBtnLabel.textContent = 'REC VIDEO (120s)';
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+      }
+
+      btnRecVideo.addEventListener('click', () => {
+        if (state.isRecording) stopVideoRecording();
+        else startVideoRecording();
+      });
+
+      // Cover Generator (4:3 & 3:4)
+      const coverCanvas = document.createElement('canvas');
+      const coverCtx = coverCanvas.getContext('2d');
+      const coverModal = document.getElementById('cover-modal');
+      const previewImg4x3 = document.getElementById('preview-img-4x3');
+      const previewImg3x4 = document.getElementById('preview-img-3x4');
+      const placeholder4x3 = document.getElementById('placeholder-4x3');
+      const placeholder3x4 = document.getElementById('placeholder-3x4');
+      const dlLink4x3 = document.getElementById('dl-link-4x3');
+      const dlLink3x4 = document.getElementById('dl-link-3x4');
+
+      document.getElementById('btn-close-cover-modal').addEventListener('click', () => {
+        coverModal.classList.add('hidden');
+      });
+
+      function renderLabCover(ratioType) {
+        const is4x3 = (ratioType === '4x3');
+        const cw = is4x3 ? 1600 : 1200;
+        const ch = is4x3 ? 1200 : 1600;
+        coverCanvas.width = cw;
+        coverCanvas.height = ch;
+
+        const prevW = window.innerWidth;
+        const prevH = window.innerHeight;
+        const prevCamPos = mainCamera.position.clone();
+        const prevCamAspect = mainCamera.aspect;
+
+        renderer.setPixelRatio(1);
+        renderer.setSize(cw, ch, false);
+        mainCamera.aspect = cw / ch;
+        mainCamera.updateProjectionMatrix();
+
+        if (is4x3) mainCamera.position.set(6.5, 5.2, 13.5);
+        else mainCamera.position.set(5.8, 5.4, 15.5);
+        mainCamera.lookAt(new THREE.Vector3(0, 1.35, 0));
+        renderer.setScissorTest(false);
+        renderer.setViewport(0, 0, cw, ch);
+
+        coverCtx.fillStyle = '#040812';
+        coverCtx.fillRect(0, 0, cw, ch);
+        renderer.render(scene, mainCamera);
+        coverCtx.drawImage(renderer.domElement, 0, 0, cw, ch);
+        drawHUDCompositeOnto(coverCtx, cw, ch, mainCamera, 'FLYWIRE 138,639 NEURONS × FLYBODY 59-DoF LAB');
+
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(prevW, prevH);
+        mainCamera.aspect = prevCamAspect;
+        mainCamera.position.copy(prevCamPos);
+        mainCamera.updateProjectionMatrix();
+
+        return coverCanvas.toDataURL('image/png');
+      }
+
+      function triggerDownload(dataUrl, filename) {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      document.getElementById('btn-cover-4x3').addEventListener('click', () => {
+        coverModal.classList.remove('hidden');
+        const url = renderLabCover('4x3');
+        previewImg4x3.src = url;
+        previewImg4x3.classList.remove('hidden');
+        placeholder4x3.classList.add('hidden');
+        dlLink4x3.href = url;
+        triggerDownload(url, 'drosophila_lab_cover_4x3.png');
+      });
+
+      document.getElementById('btn-cover-3x4').addEventListener('click', () => {
+        coverModal.classList.remove('hidden');
+        const url = renderLabCover('3x4');
+        previewImg3x4.src = url;
+        previewImg3x4.classList.remove('hidden');
+        placeholder3x4.classList.add('hidden');
+        dlLink3x4.href = url;
+        triggerDownload(url, 'drosophila_lab_cover_3x4.png');
+      });
+
+      // ==========================================
+      // 13. POINTER ORBIT, ZOOM & 3D RAYCASTING
+      // ==========================================
+      let isDragging = false;
+      let dragMoved = false;
+      let prevPointer = { x: 0, y: 0 };
+      const raycaster = new THREE.Raycaster();
+      const pointerNDC = new THREE.Vector2();
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        dragMoved = false;
+        prevPointer.x = e.clientX;
+        prevPointer.y = e.clientY;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+
+        camTargetSpherical.theta -= dx * 0.0065;
+        camTargetSpherical.phi = Math.max(0.10, Math.min(Math.PI - 0.12, camTargetSpherical.phi - dy * 0.0065));
+        prevPointer.x = e.clientX;
+        prevPointer.y = e.clientY;
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (isDragging && !dragMoved && e.target === renderer.domElement) {
+          pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+          pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+          raycaster.setFromCamera(pointerNDC, mainCamera);
+          const hits = raycaster.intersectObjects(interactableMeshes, false);
+          if (hits.length > 0 && hits[0].object.userData.subsystem) {
+            selectSubsystem(hits[0].object.userData.subsystem);
+          }
+        }
+        isDragging = false;
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camTargetSpherical.radius = Math.max(5.5, Math.min(30.0, camTargetSpherical.radius + e.deltaY * 0.01));
+      }, { passive: false });
+
+      window.addEventListener('resize', () => {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        mainCamera.aspect = window.innerWidth / window.innerHeight;
+        mainCamera.updateProjectionMatrix();
+      });
+
+      // ==========================================
+      // 14. MAIN SIMULATION & RENDER LOOP
+      // ==========================================
+      const clock = new THREE.Clock();
+      const tempVec = new THREE.Vector3();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const dt = Math.min(clock.getDelta(), 0.05);
+
+        updateDirectorDemo(dt);
+
+        state.dimFactor += (state.targetDim - state.dimFactor) * Math.min(1, dt * 6.5);
+        state.explodeFactor += (state.targetExplode - state.explodeFactor) * Math.min(1, dt * 7.5);
+        const dim = state.dimFactor;
+        const exp = state.explodeFactor;
+
+        state.simTime += dt * 3.5 * state.tempo;
+        const t = state.simTime;
+
+        // 1. Automatic 40ms Sudoku Spike Stepping in Sudoku Mode
+        state.sudokuStepTimer += dt * state.tempo;
+        if (state.labMode === 'sudoku' && state.sudokuStepTimer >= 1.35) {
+          state.sudokuStepTimer = 0;
+          stepNextSudokuCell();
+        }
+
+        // 2. Update 2D<->3D Dimensional Morph & Exploded View across all 12 Subsystems
+        const lPosAttr = leaderLines.geometry.attributes.position;
+        PART_KEYS.forEach((key, idx) => {
+          const grp = subsystems[key];
+          const p3d = grp.userData.basePos;
+          const p2d = grp.userData.pos2D;
+          const s2d = grp.userData.scale2D;
+          const eVec = grp.userData.explodeVec;
+
+          const curX = THREE.MathUtils.lerp(p2d.x, p3d.x, dim) + eVec.x * exp;
+          const curY = THREE.MathUtils.lerp(p2d.y, p3d.y, dim) + eVec.y * exp;
+          const curZ = THREE.MathUtils.lerp(p2d.z, p3d.z, dim) + eVec.z * exp * dim;
+          grp.position.set(curX, curY, curZ);
+
+          grp.scale.set(
+            THREE.MathUtils.lerp(s2d.x, 1.0, dim),
+            THREE.MathUtils.lerp(s2d.y, 1.0, dim),
+            THREE.MathUtils.lerp(s2d.z, 1.0, dim)
+          );
+
+          lPosAttr.setXYZ(idx * 2, p3d.x, p3d.y, p3d.z * dim);
+          lPosAttr.setXYZ(idx * 2 + 1, curX, curY, curZ);
+        });
+        lPosAttr.needsUpdate = true;
+        leaderLines.computeLineDistances();
+        mats.leaderDash.opacity = Math.max(exp * 0.75, (1 - dim) * 0.45);
+
+        // 3. Animate FlyWire 138,639-Neuron Gold Spike Flashes!
+        spikeFlashBoost = Math.max(0, spikeFlashBoost - dt * 2.2);
+        const colAttr = connectomeCloud.geometry.attributes.color;
+        for (let i = 0; i < neuronCount; i++) {
+          const wave = Math.sin(t * 4.5 + i * 0.37);
+          const isFiring = wave > (0.86 - spikeFlashBoost * 0.32);
+          if (isFiring) {
+            // Gold Flash (1.0, 0.82, 0.18)
+            colAttr.setXYZ(i, 1.0, 0.82, 0.18);
+          } else {
+            colAttr.setXYZ(i, neuronBaseColors[i * 3], neuronBaseColors[i * 3 + 1], neuronBaseColors[i * 3 + 2]);
+          }
+        }
+        colAttr.needsUpdate = true;
+        ellipsoidRing.rotation.z = t * 1.8;
+        ellipsoidRing.rotation.x = Math.sin(t) * 0.4;
+
+        // 4. Behavior Mode Kinematics (Mode 1: Sudoku Walking | Mode 2: Rubik's Cube Grip | Mode 3: Vision Flight)
+        const nextCell = emptyQueue.length > 0 ? emptyQueue[0] : { r: 4, c: 4 };
+        const cellWorldX = (nextCell.c - 4) * 0.92;
+        const cellWorldZ = (nextCell.r - 4) * 0.92;
+
+        targetCellBeacon.position.set(cellWorldX, 0.03, cellWorldZ);
+        targetCellBeacon.scale.setScalar(1.0 + Math.sin(t * 4) * 0.15);
+
+        if (state.labMode === 'sudoku') {
+          // NeuroMechFly walks smoothly toward the active Sudoku cell on the 9x9 board!
+          const targetFlyX = cellWorldX * 0.55 * dim;
+          const targetFlyZ = cellWorldZ * 0.55 * dim;
+          flyWalkerRoot.position.x += (targetFlyX - flyWalkerRoot.position.x) * 0.06;
+          flyWalkerRoot.position.z += (targetFlyZ - flyWalkerRoot.position.z) * 0.06;
+          flyWalkerRoot.position.y += (0.28 - flyWalkerRoot.position.y) * 0.1;
+
+          const dx = targetFlyX - flyWalkerRoot.position.x;
+          const dz = targetFlyZ - flyWalkerRoot.position.z;
+          if (Math.hypot(dx, dz) > 0.05) {
+            const targetYaw = Math.atan2(dx, dz);
+            flyWalkerRoot.rotation.y += (targetYaw - flyWalkerRoot.rotation.y) * 0.08;
+          }
+          flyWalkerRoot.rotation.x = 0;
+
+          // Alternating Tripod Walking Gait (L1+R2+L3 vs R1+L2+R3)
+          let activePads = 0;
+          flyLegs.forEach((leg) => {
+            const tripodPhase = ((leg.pair + (leg.side === 1 ? 1 : 0)) % 2) * Math.PI;
+            const stride = Math.sin(t * 3.6 + tripodPhase);
+            const lift = Math.max(0, Math.cos(t * 3.6 + tripodPhase));
+            leg.root.rotation.y = stride * 0.32 * leg.side;
+            leg.femur.rotation.z = leg.side * (-0.78 + lift * 0.28);
+            leg.tibia.rotation.x = stride * 0.22;
+            const isGrounded = lift < 0.25;
+            if (isGrounded) activePads++;
+            leg.ring.material.opacity = isGrounded ? 0.85 : 0.15;
+          });
+          document.getElementById('metric-adhesion').textContent = `${activePads}/6 PADS`;
+
+          // Wings folded neatly over abdomen during walking
+          wingPivots.forEach((w) => {
+            w.pivot.rotation.y = w.side * -0.18;
+            w.pivot.rotation.z = Math.sin(t * 2) * 0.04 * w.side;
+          });
+        } else if (state.labMode === 'rubik') {
+          // POST 2 (@nice11018): Step the real 3x3 Rubik's Cube Scramble & Inverse Restoration state machine!
+          stepRubikSolver(dt);
+
+          // Perch the fruit fly cleanly above the suspended 3x3 Rubik's Cube (zero collision with cube or pedestal!)
+          flyWalkerRoot.position.x += (0 - flyWalkerRoot.position.x) * 0.14;
+          flyWalkerRoot.position.z += (0.04 - flyWalkerRoot.position.z) * 0.14;
+          flyWalkerRoot.position.y += (1.24 - flyWalkerRoot.position.y) * 0.14;
+          flyWalkerRoot.rotation.y += (0 - flyWalkerRoot.rotation.y) * 0.14;
+          flyWalkerRoot.rotation.x = 0.22;
+
+          // Keep the cube at a steady isometric angle during SCRAMBLING and SOLVING so every 90-degree face turn is crystal clear!
+          // Only rotate 360 degrees slowly during the SOLVED celebration hold so all 6 solid faces are shown!
+          if (rubikState.phase === 'SOLVED') {
+            rubikGroup.rotation.y = 0.62 + rubikState.solvedHoldTimer * 1.65;
+            rubikGroup.rotation.x = 0.32 + Math.sin(rubikState.solvedHoldTimer * 2.0) * 0.22;
+          } else {
+            rubikGroup.rotation.y += (0.62 - rubikGroup.rotation.y) * 0.15;
+            rubikGroup.rotation.x += (0.32 - rubikGroup.rotation.x) * 0.15;
+          }
+
+          pedestalBaseRing.rotation.z = t * 0.35;
+          pedestalInnerRing.rotation.z = -t * 0.65;
+
+          // Coordinate 6 tarsal claws with the active face turn!
+          const turnPulse = rubikState.activeMove ? Math.sin(rubikState.moveProgress * Math.PI) : 0;
+          flyLegs.forEach((leg) => {
+            const gripWave = Math.sin(t * 3.2 + leg.pair * 1.1 + leg.side) * 0.14 + turnPulse * 0.25 * leg.side;
+            leg.root.rotation.y = gripWave * leg.side;
+            leg.femur.rotation.z = leg.side * (-0.66 + gripWave * 0.10);
+            leg.tibia.rotation.z = leg.side * (1.16 + turnPulse * 0.18);
+            leg.ring.material.opacity = 0.92;
+          });
+          document.getElementById('metric-adhesion').textContent = '6/6 LOCKED';
+
+          wingPivots.forEach((w) => {
+            w.pivot.rotation.y = w.side * -0.32;
+            w.pivot.rotation.z = Math.sin(t * 7) * 0.22 * w.side;
+          });
+        } else {
+          // Vision-Guided 220Hz Free Flight
+          flyWalkerRoot.position.x = Math.sin(t * 0.55) * 1.4 * dim;
+          flyWalkerRoot.position.z = Math.cos(t * 0.55) * 1.1 * dim;
+          flyWalkerRoot.position.y = 1.25 + Math.sin(t * 2.2) * 0.18;
+          flyWalkerRoot.rotation.y = Math.atan2(Math.cos(t * 0.55), -Math.sin(t * 0.55)) * 0.35;
+          flyWalkerRoot.rotation.x = -0.15 + Math.sin(t * 1.8) * 0.06;
+
+          wingPivots.forEach((w) => {
+            w.pivot.rotation.y = w.side * (-0.55 + Math.cos(t * 14) * 0.35);
+            w.pivot.rotation.z = w.side * (Math.sin(t * 14) * 0.75);
+            w.pivot.rotation.x = Math.cos(t * 14) * 0.32;
+          });
+
+          flyLegs.forEach((leg) => {
+            leg.femur.rotation.z = leg.side * -0.42;
+            leg.tibia.rotation.z = leg.side * 1.35;
+            leg.ring.material.opacity = 0.1;
+          });
+          document.getElementById('metric-adhesion').textContent = '0/6 AIRBORNE';
+        }
+
+        // Haltere anti-phase oscillation
+        haltereStalks.forEach((h) => {
+          h.group.rotation.z = h.side * Math.sin(t * 14 + Math.PI) * 0.55;
+        });
+
+        // Update Synaptic Data Beams between Brain Connectome and Thorax
+        const bAttr = neuralBeams.geometry.attributes.position;
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2 + t * 0.4;
+          bAttr.setXYZ(i * 2, Math.cos(a) * 1.2, 3.35, Math.sin(a) * 0.45);
+          bAttr.setXYZ(
+            i * 2 + 1,
+            flyWalkerRoot.position.x + Math.cos(a) * 0.35,
+            flyWalkerRoot.position.y + 0.65,
+            flyWalkerRoot.position.z + Math.sin(a) * 0.35
+          );
+        }
+        bAttr.needsUpdate = true;
+        neuralBeams.computeLineDistances();
+
+        // Update Compound-Eye Vision Render Canvas (Right Sidebar)
+        renderCompoundEyeVision(t);
+
+        // Update Live Spike Rate Metric
+        const rate = 1280 + Math.round(Math.sin(t * 3.1) * 240 + spikeFlashBoost * 620);
+        document.getElementById('metric-spikes').textContent = `${rate.toLocaleString()} Hz`;
+
+        // 5. Camera Spherical Orbit & Smooth Damping
+        if (state.autoOrbit && !isDragging) {
+          camTargetSpherical.theta += dt * 0.30;
+        }
+        camSpherical.radius += (camTargetSpherical.radius - camSpherical.radius) * 0.08;
+        camSpherical.theta += (camTargetSpherical.theta - camSpherical.theta) * 0.08;
+        camSpherical.phi += (camTargetSpherical.phi - camSpherical.phi) * 0.08;
+        camSpherical.target.lerp(camTargetSpherical.target, 0.08);
+
+        const sinPhi = Math.sin(camSpherical.phi);
+        mainCamera.position.set(
+          camSpherical.target.x + camSpherical.radius * sinPhi * Math.sin(camSpherical.theta),
+          camSpherical.target.y + camSpherical.radius * Math.cos(camSpherical.phi),
+          camSpherical.target.z + camSpherical.radius * sinPhi * Math.cos(camSpherical.theta)
+        );
+        mainCamera.lookAt(camSpherical.target);
+
+        // 6. Render Single View or 4-VIEWS Split
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+
+        if (!state.quadView) {
+          renderer.setScissorTest(false);
+          renderer.setViewport(0, 0, w, h);
+          renderer.render(scene, mainCamera);
+
+          if (state.showAnnotations) {
+            calloutElements.forEach(({ def, el }) => {
+              def.anchorObj.getWorldPosition(tempVec);
+              tempVec.add(def.offset);
+              tempVec.project(mainCamera);
+              if (tempVec.z > 1) {
+                el.style.opacity = '0';
+              } else {
+                const sx = (tempVec.x * 0.5 + 0.5) * w;
+                const sy = (-tempVec.y * 0.5 + 0.5) * h;
+                el.style.left = `${sx}px`;
+                el.style.top = `${sy}px`;
+                el.style.opacity = '1';
+              }
+            });
+          }
+        } else {
+          renderer.setScissorTest(true);
+          const halfW = Math.floor(w / 2);
+          const halfH = Math.floor(h / 2);
+          const subAspect = halfW / halfH;
+
+          mainCamera.aspect = subAspect;
+          mainCamera.updateProjectionMatrix();
+          renderer.setViewport(0, halfH, halfW, halfH);
+          renderer.setScissor(0, halfH, halfW, halfH);
+          renderer.render(scene, mainCamera);
+
+          topCamera.aspect = subAspect;
+          topCamera.updateProjectionMatrix();
+          topCamera.position.set(0, 19.0, 0);
+          topCamera.lookAt(0, 0, 0);
+          renderer.setViewport(halfW, halfH, w - halfW, halfH);
+          renderer.setScissor(halfW, halfH, w - halfW, halfH);
+          renderer.render(scene, topCamera);
+
+          frontCamera.aspect = subAspect;
+          frontCamera.updateProjectionMatrix();
+          frontCamera.position.set(0, 1.8, 16.0);
+          frontCamera.lookAt(0, 1.4, 0);
+          renderer.setViewport(0, 0, halfW, halfH);
+          renderer.setScissor(0, 0, halfW, halfH);
+          renderer.render(scene, frontCamera);
+
+          sideCamera.aspect = subAspect;
+          sideCamera.updateProjectionMatrix();
+          sideCamera.position.set(16.0, 1.8, 0);
+          sideCamera.lookAt(0, 1.4, 0);
+          renderer.setViewport(halfW, 0, w - halfW, halfH);
+          renderer.setScissor(halfW, 0, w - halfW, halfH);
+          renderer.render(scene, sideCamera);
+
+          mainCamera.aspect = w / h;
+          mainCamera.updateProjectionMatrix();
+        }
+
+        if (state.isRecording) {
+          recCtx.drawImage(renderer.domElement, 0, 0, renderer.domElement.width, renderer.domElement.height);
+          drawHUDCompositeOnto(recCtx, renderer.domElement.width, renderer.domElement.height, mainCamera, demoActLabel.textContent);
+        }
+      }
+
+      animate();
+    })();
+  </script>
+</body>
+</html>

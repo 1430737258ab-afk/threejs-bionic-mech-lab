@@ -1,0 +1,2713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FIG. 12 — CROCODYLUS MECHANICA | Gavialis Horologia 3D Study</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Import Map for Latest Three.js r186 (v0.186.1) ES Module + Addons -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #07101e;
+      --bg-panel: rgba(10, 20, 38, 0.78);
+      --border-line: rgba(212, 175, 55, 0.30);
+      --border-subtle: rgba(148, 163, 184, 0.16);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-gold: #d4af37;
+      --accent-cyan: #38bdf8;
+      --grid-color: rgba(56, 189, 248, 0.07);
+    }
+    body.theme-obsidian {
+      --bg-primary: #09090c;
+      --bg-panel: rgba(18, 18, 24, 0.82);
+      --border-line: rgba(229, 169, 109, 0.32);
+      --border-subtle: rgba(161, 161, 170, 0.15);
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --accent-gold: #e5a96d;
+      --accent-cyan: #f43f5e;
+      --grid-color: rgba(229, 169, 109, 0.05);
+    }
+    body.theme-parchment {
+      --bg-primary: #efe6d5;
+      --bg-panel: rgba(242, 233, 216, 0.86);
+      --border-line: rgba(120, 81, 35, 0.36);
+      --border-subtle: rgba(120, 81, 35, 0.18);
+      --text-main: #292018;
+      --text-muted: #6e5a44;
+      --accent-gold: #8c5823;
+      --accent-cyan: #1d6fa5;
+      --grid-color: rgba(120, 81, 35, 0.08);
+    }
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      transition: background-color 0.45s ease, color 0.35s ease;
+    }
+    .font-serif-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .blueprint-grid {
+      background-image:
+        linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .hud-panel {
+      background: var(--bg-panel);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-line);
+      transition: all 0.3s ease;
+    }
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .hud-btn:hover {
+      border-color: var(--accent-gold);
+      color: var(--text-main);
+      background: rgba(212, 175, 55, 0.10);
+    }
+    .hud-btn.active {
+      background: rgba(212, 175, 55, 0.20);
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+      box-shadow: 0 0 12px rgba(212, 175, 55, 0.18);
+    }
+    input[type="range"].mech-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--border-subtle);
+      border-radius: 2px;
+      outline: none;
+    }
+    input[type="range"].mech-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent-gold);
+      border: 2px solid var(--bg-primary);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+      transition: transform 0.15s ease;
+    }
+    input[type="range"].mech-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    .callout-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .callout-pin.active-pin {
+      transform: translate(-50%, -50%) scale(1.12);
+      z-index: 25;
+    }
+    .callout-pin.active-pin .hud-panel {
+      border-color: var(--accent-gold);
+      background: rgba(212, 175, 55, 0.24);
+      box-shadow: 0 0 16px rgba(212, 175, 55, 0.45);
+      opacity: 1 !important;
+    }
+    .callout-pin.active-pin .callout-dot {
+      background: #38bdf8;
+      box-shadow: 0 0 14px #38bdf8;
+      transform: scale(1.25);
+    }
+    .callout-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-gold);
+      border: 2px solid var(--bg-primary);
+      box-shadow: 0 0 10px var(--accent-gold);
+      position: relative;
+    }
+    .callout-dot::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 1px solid var(--accent-gold);
+      opacity: 0.6;
+      animation: pulseRing 2.2s infinite;
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(2.1); opacity: 0; }
+    }
+    .corner-bracket {
+      position: relative;
+    }
+    .corner-bracket::before,
+    .corner-bracket::after {
+      content: '';
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-color: var(--accent-gold);
+      pointer-events: none;
+    }
+    .corner-bracket::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1.5px solid var(--accent-gold);
+      border-left: 1.5px solid var(--accent-gold);
+    }
+    .corner-bracket::after {
+      bottom: -1px;
+      right: -1px;
+      border-bottom: 1.5px solid var(--accent-gold);
+      border-right: 1.5px solid var(--accent-gold);
+    }
+  </style>
+</head>
+<body class="blueprint-grid">
+  <!-- WebGL Canvas Container -->
+  <div id="canvas-container" class="fixed inset-0 w-full h-full z-0"></div>
+
+  <!-- 4-View Split Overlay Lines & Labels -->
+  <div id="quad-overlay" class="fixed inset-0 pointer-events-none z-10 hidden">
+    <div class="absolute inset-y-0 left-1/2 w-px" style="background: var(--border-line);"></div>
+    <div class="absolute inset-x-0 top-1/2 h-px" style="background: var(--border-line);"></div>
+    <div class="absolute top-20 left-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-gold);">VIEW 01 // ISO PERSPECTIVE</div>
+    <div class="absolute top-20 left-1/2 ml-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-gold);">VIEW 02 // DORSAL PLAN (TOP)</div>
+    <div class="absolute top-1/2 mt-3 left-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-gold);">VIEW 03 // ANTERIOR SNOUT</div>
+    <div class="absolute top-1/2 mt-3 left-1/2 ml-4 font-mono-tech text-[10px] tracking-widest px-2 py-0.5 rounded hud-panel" style="color: var(--accent-gold);">VIEW 04 // LATERAL PROFILE</div>
+  </div>
+
+  <!-- 3D Dynamic Annotation Layer -->
+  <div id="annotations-layer" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+  <!-- Director Auto-Demo Banner & Recording Toast -->
+  <div id="demo-banner" class="fixed top-20 left-1/2 -translate-x-1/2 z-30 pointer-events-none hidden">
+    <div class="hud-panel corner-bracket px-4 py-2 rounded-sm flex flex-col items-center gap-1.5 min-w-[280px] sm:min-w-[380px]">
+      <div class="w-full flex items-center justify-between font-mono-tech text-[10px] tracking-widest uppercase">
+        <span id="demo-act-label" style="color: var(--accent-gold);">ACT I // AMPHIBIOUS PROWL KINEMATICS</span>
+        <span id="demo-time-label" style="color: var(--accent-cyan);">00.0s / 24.0s</span>
+      </div>
+      <div class="w-full h-1 bg-slate-800/80 rounded overflow-hidden">
+        <div id="demo-progress-bar" class="h-full transition-all duration-100" style="width: 0%; background: var(--accent-gold);"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rec-toast" class="fixed top-36 left-1/2 -translate-x-1/2 z-30 pointer-events-none hidden">
+    <div class="hud-panel px-3.5 py-1.5 rounded-sm font-mono-tech text-[11px] flex items-center gap-2 border" style="border-color: var(--accent-gold); color: var(--text-main);">
+      <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+      <span id="rec-toast-text">RECORDING 60FPS WEBGL STREAM...</span>
+    </div>
+  </div>
+
+  <!-- Cover Download & Preview Floating Modal -->
+  <div id="cover-modal" class="fixed right-3 sm:right-5 top-24 z-30 w-72 sm:w-80 hud-panel corner-bracket p-3.5 rounded-sm pointer-events-auto">
+    <div class="flex items-center justify-between border-b pb-1.5 mb-2.5" style="border-color: var(--border-subtle);">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="font-mono-tech text-[10px] tracking-wider uppercase" style="color: var(--accent-gold);">COVER STUDIO // 横竖封面直出</span>
+      </div>
+      <button id="btn-close-cover-modal" class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded hover:bg-white/10" style="color: var(--text-muted);">✕</button>
+    </div>
+    <p id="cover-status-msg" class="text-[11px] mb-2.5 leading-snug" style="color: var(--text-main);">
+      正在为您自动生成并下载 <strong>4:3 横版</strong> 与 <strong>3:4 竖版</strong> 高清封面...
+    </p>
+    <div class="grid grid-cols-2 gap-2.5 items-start">
+      <div class="flex flex-col gap-1.5">
+        <div class="relative rounded overflow-hidden border bg-slate-950/80 aspect-[4/3] flex items-center justify-center" style="border-color: var(--border-line);">
+          <img id="preview-img-4x3" alt="4:3 横版封面预览" class="w-full h-full object-cover hidden" />
+          <span id="placeholder-4x3" class="font-mono-tech text-[9px]" style="color: var(--text-muted);">4:3 渲染中...</span>
+        </div>
+        <a id="dl-link-4x3" download="crocodile_cover_4x3.png" href="#download-4x3" class="hud-btn active font-mono-tech text-[10px] py-1.5 px-2 rounded-sm text-center block">
+          ⬇ 下载横封面 (4:3)
+        </a>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <div class="relative rounded overflow-hidden border bg-slate-950/80 aspect-[3/4] flex items-center justify-center" style="border-color: var(--border-line);">
+          <img id="preview-img-3x4" alt="3:4 竖版封面预览" class="w-full h-full object-cover hidden" />
+          <span id="placeholder-3x4" class="font-mono-tech text-[9px]" style="color: var(--text-muted);">3:4 渲染中...</span>
+        </div>
+        <a id="dl-link-3x4" download="crocodile_cover_3x4.png" href="#download-3x4" class="hud-btn active font-mono-tech text-[10px] py-1.5 px-2 rounded-sm text-center block">
+          ⬇ 下载竖封面 (3:4)
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Engineering Header Bar -->
+  <header class="fixed top-0 inset-x-0 z-20 p-3 sm:p-5 flex flex-wrap items-start justify-between gap-3 pointer-events-none">
+    <div class="hud-panel corner-bracket px-4 py-3 rounded-sm pointer-events-auto max-w-md">
+      <div class="flex items-center gap-2 font-mono-tech text-[10px] sm:text-[11px] tracking-[0.2em] uppercase" style="color: var(--accent-gold);">
+        <span>FIG. 12 — AUTOMATON LORICATA</span>
+        <span class="opacity-50">|</span>
+        <span>SCALE 1 : 10</span>
+      </div>
+      <div class="flex items-baseline gap-3 mt-0.5">
+        <h1 class="font-serif-title italic text-2xl sm:text-3xl font-semibold tracking-wide">Crocodylus Mechanica</h1>
+        <span class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded border" style="border-color: var(--border-line); color: var(--accent-cyan);">MK-VIII</span>
+      </div>
+      <p class="font-mono-tech text-[10px] tracking-wider uppercase mt-1" style="color: var(--text-muted);">
+        CONCEPT NO. 12: HYDRAULIC-JAW AMPHIBIOUS HOROLOGICAL REPTILE
+      </p>
+    </div>
+
+    <!-- Top Right Utility & Theme Controls -->
+    <div class="flex flex-wrap items-center gap-2 pointer-events-auto">
+      <div class="hud-panel px-2.5 py-1.5 rounded-sm flex items-center gap-1.5">
+        <span class="font-mono-tech text-[10px] tracking-wider uppercase mr-1" style="color: var(--text-muted);">FINISH:</span>
+        <button id="theme-azure" class="hud-btn active font-mono-tech text-[10px] px-2 py-1 rounded-sm" title="深海蓝金工程蓝图主题">AZURE &amp; GOLD</button>
+        <button id="theme-obsidian" class="hud-btn font-mono-tech text-[10px] px-2 py-1 rounded-sm" title="黑曜石赤金重装主题">OBSIDIAN</button>
+        <button id="theme-parchment" class="hud-btn font-mono-tech text-[10px] px-2 py-1 rounded-sm" title="达芬奇手稿羊皮纸主题">DA VINCI</button>
+      </div>
+
+      <button id="btn-annotations" class="hud-panel hud-btn active font-mono-tech text-[10px] px-3 py-2 rounded-sm flex items-center gap-1.5" title="显示/隐藏 3D 结构标注点">
+        <span class="w-2 h-2 rounded-full" style="background: var(--accent-gold);"></span>
+        <span>CALLOUTS: ON</span>
+      </button>
+
+      <button id="btn-sound" class="hud-panel hud-btn font-mono-tech text-[10px] px-3 py-2 rounded-sm flex items-center gap-1.5" title="开启/关闭 重型棘轮与颌骨咬合音效">
+        <span id="sound-indicator" class="w-2 h-2 rounded-full bg-slate-500"></span>
+        <span id="sound-label">AUDIO: OFF</span>
+      </button>
+
+      <button id="btn-auto-demo" class="hud-panel hud-btn font-mono-tech text-[10px] px-3 py-2 rounded-sm flex items-center gap-1.5" title="开启/停止 24秒自动导演运镜演示秀">
+        <span id="demo-indicator" class="w-2 h-2 rounded-full bg-sky-400"></span>
+        <span id="demo-btn-label">AUTO DEMO</span>
+      </button>
+
+      <button id="btn-rec-video" class="hud-panel hud-btn font-mono-tech text-[10px] px-3 py-2 rounded-sm flex items-center gap-1.5" title="录制并下载高清 WebGL 演示视频">
+        <span id="rec-indicator" class="w-2 h-2 rounded-full bg-rose-500"></span>
+        <span id="rec-btn-label">REC VIDEO</span>
+      </button>
+
+      <button id="btn-cover-4x3" class="hud-panel hud-btn active font-mono-tech text-[10px] px-3 py-2 rounded-sm flex items-center gap-1.5" title="生成并直接下载 4:3 横版高清封面 (1600x1200)">
+        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span>下载横封面 4:3</span>
+      </button>
+
+      <button id="btn-cover-3x4" class="hud-panel hud-btn active font-mono-tech text-[10px] px-3 py-2 rounded-sm flex items-center gap-1.5" title="生成并直接下载 3:4 竖版高清封面 (1200x1600)">
+        <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+        <span>下载竖封面 3:4</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry & Part Inspector Panel -->
+  <aside class="fixed left-3 sm:left-5 top-36 sm:top-40 z-20 w-56 sm:w-64 flex flex-col gap-2.5 pointer-events-none">
+    <!-- Live Telemetry Readout -->
+    <div class="hud-panel corner-bracket p-3.5 rounded-sm pointer-events-auto">
+      <div class="flex items-center justify-between border-b pb-1.5 mb-2.5" style="border-color: var(--border-subtle);">
+        <span class="font-mono-tech text-[10px] tracking-[0.18em] uppercase" style="color: var(--accent-gold);">TELEMETRY SPEC</span>
+        <span id="status-badge" class="font-mono-tech text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20" style="color: var(--accent-gold);">PROWL ACTIVE</span>
+      </div>
+      <div class="grid grid-cols-2 gap-y-2 gap-x-3 font-mono-tech text-xs">
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">LENGTH (全长)</div>
+          <div id="metric-length" class="font-semibold text-sm">4.20 m</div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">DISPLACEMENT (质量)</div>
+          <div class="font-semibold text-sm">485 kg</div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">BITE FORCE (咬合力)</div>
+          <div id="metric-bite" class="font-semibold text-sm" style="color: var(--accent-cyan);">16.4 kN</div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">JAW GAPE (颌张角)</div>
+          <div id="metric-gape" class="font-semibold text-sm">28°</div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">TAIL FREQ (尾频)</div>
+          <div id="metric-freq" class="font-semibold text-sm">2.4 Hz</div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase" style="color: var(--text-muted);">TORQUE (主轴扭矩)</div>
+          <div id="metric-torque" class="font-semibold text-sm">340 N·m</div>
+        </div>
+      </div>
+
+      <!-- Jaw Gape Angle Manual Override Slider -->
+      <div class="mt-3 pt-2.5 border-t" style="border-color: var(--border-subtle);">
+        <div class="flex justify-between font-mono-tech text-[10px] mb-1">
+          <span style="color: var(--text-muted);">HYDRAULIC JAW (颌骨张角)</span>
+          <span id="label-jaw-slider" style="color: var(--accent-gold);">AUTO (28°)</span>
+        </div>
+        <input id="slider-jaw" type="range" min="0" max="55" value="28" class="mech-slider" />
+      </div>
+    </div>
+
+    <!-- Selected Subsystem Inspector Card -->
+    <div id="inspector-card" class="hud-panel corner-bracket p-3.5 rounded-sm pointer-events-auto">
+      <div class="flex items-center justify-between mb-1">
+        <span id="part-code" class="font-mono-tech text-[10px] tracking-widest uppercase" style="color: var(--accent-cyan);">SYS-00 // FULL AUTOMATON</span>
+        <button id="btn-reset-focus" class="font-mono-tech text-[9px] underline opacity-75 hover:opacity-100 hidden" style="color: var(--accent-gold);">RESET FOCUS</button>
+      </div>
+      <h2 id="part-title" class="font-serif-title italic text-lg font-semibold leading-tight">重装液压发条机械鳄鱼总成</h2>
+      <p id="part-desc" class="text-[11px] leading-relaxed mt-1.5" style="color: var(--text-muted);">
+        融合瑞士大复杂钟表擒纵机构与重型液压连杆传动。点击金色标注点或任意 3D 装甲部件可聚焦查看内部差速齿轮与液压活塞细节。
+      </p>
+      <div class="mt-2 pt-2 border-t flex items-center justify-between font-mono-tech text-[10px]" style="border-color: var(--border-subtle); color: var(--text-muted);">
+        <span>ALLOY: <strong id="part-material" class="font-normal" style="color: var(--text-main);">Naval Brass, Blued Steel &amp; Ruby</strong></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Central Engineering Control Dock -->
+  <footer class="fixed bottom-0 inset-x-0 z-20 p-3 sm:p-5 flex flex-col lg:flex-row items-stretch lg:items-end justify-between gap-3 pointer-events-none">
+    <!-- Left/Center: Exploded View & Locomotion Controls -->
+    <div class="hud-panel corner-bracket p-3.5 rounded-sm pointer-events-auto flex-1 max-w-2xl flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+      <!-- Prowl & Apex Snap Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btn-prowl" class="hud-btn active font-mono-tech text-xs font-medium px-4 py-2.5 rounded-sm flex items-center gap-2 whitespace-nowrap">
+          <span id="prowl-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          <span id="prowl-btn-text">SWIM / PROWL</span>
+        </button>
+        <button id="btn-snap-mode" class="hud-btn font-mono-tech text-[11px] px-3 py-2.5 rounded-sm whitespace-nowrap" title="触发液压颌骨连续蓄力猛咬与推进尾超频模式">
+          APEX SNAP
+        </button>
+      </div>
+
+      <!-- Assembled <-> Exploded Slider -->
+      <div class="flex-1 flex flex-col justify-center">
+        <div class="flex items-center justify-between font-mono-tech text-[10px] tracking-wider mb-1.5">
+          <button id="btn-assembled" class="hover:underline cursor-pointer" style="color: var(--accent-gold);">ASSEMBLED (组装)</button>
+          <span id="explode-pct" class="px-1.5 py-0.2 rounded text-[10px]" style="color: var(--text-main);">0%</span>
+          <button id="btn-exploded" class="hover:underline cursor-pointer" style="color: var(--text-muted);">EXPLODED (爆炸拆解)</button>
+        </div>
+        <input id="slider-explode" type="range" min="0" max="100" value="0" class="mech-slider" />
+      </div>
+
+      <!-- Tempo Speed Slider -->
+      <div class="w-full sm:w-36 flex flex-col justify-center">
+        <div class="flex items-center justify-between font-mono-tech text-[10px] tracking-wider mb-1.5">
+          <span style="color: var(--text-muted);">TEMPO (速率)</span>
+          <span id="tempo-val" style="color: var(--accent-gold);">1.0x</span>
+        </div>
+        <input id="slider-tempo" type="range" min="5" max="250" value="100" class="mech-slider" />
+      </div>
+    </div>
+
+    <!-- Right: Camera Angles & Multi-Viewport Dock -->
+    <div class="hud-panel corner-bracket p-3 rounded-sm pointer-events-auto flex flex-wrap items-center gap-1.5">
+      <span class="font-mono-tech text-[10px] tracking-wider uppercase mr-1" style="color: var(--text-muted);">CAMERA:</span>
+      <button id="cam-iso" class="hud-btn active font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm">ISO</button>
+      <button id="cam-plan" class="hud-btn font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm">PLAN</button>
+      <button id="cam-front" class="hud-btn font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm">FRONT</button>
+      <button id="cam-profile" class="hud-btn font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm">PROFILE</button>
+      <div class="h-4 w-px mx-1" style="background: var(--border-subtle);"></div>
+      <button id="btn-orbit" class="hud-btn font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm">ORBIT</button>
+      <button id="btn-quad-view" class="hud-btn font-mono-tech text-[10px] px-2.5 py-1.5 rounded-sm" title="切换单视图 / 四视图工程蓝图同屏">1-4 VIEWS</button>
+    </div>
+  </footer>
+
+  <script>
+    (async function () {
+      if (!window.THREE || parseInt(window.THREE.REVISION || '0', 10) < 180) {
+        try {
+          const latestThree = await import('https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js')
+            .catch(() => import('https://unpkg.com/three@0.186.1/build/three.module.min.js'));
+          if (latestThree && latestThree.WebGLRenderer) {
+            window.THREE = latestThree;
+          }
+        } catch (err) {
+          await new Promise((resolve) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+            s.onload = resolve;
+            s.onerror = resolve;
+            document.head.appendChild(s);
+          });
+        }
+      }
+      const THREE = window.THREE;
+      // ==========================================
+      // 1. APPLICATION STATE & SUBSYSTEM METADATA
+      // ==========================================
+      const state = {
+        prowlActive: true,
+        snapMode: false,
+        explodeFactor: 0.0,
+        targetExplode: 0.0,
+        tempo: 1.0,
+        manualJawDeg: null, // null = automatic sinusoidal/snap cycle
+        currentJawDeg: 24,
+        autoOrbit: false,
+        quadView: false,
+        showAnnotations: true,
+        soundEnabled: false,
+        theme: 'azure',
+        selectedPart: null,
+        simTime: 0,
+        demoActive: false,
+        demoElapsed: 0,
+        demoDuration: 24.0,
+        isRecording: false
+      };
+
+      const SUBSYSTEM_INFO = {
+        all: {
+          code: 'SYS-00 // FULL AUTOMATON',
+          title: '重装液压发条机械鳄鱼总成',
+          desc: '融合瑞士高复杂陀飞轮发条齿轮箱与双联液压连杆咬合机构。全身由 180 余个程序化几何部件构成，支持 S 型两栖推进波、四足行星连杆步态与全机无级爆炸拆解。',
+          material: 'Naval Brass, Blued Steel & Ruby'
+        },
+        skull: {
+          code: 'SYS-01 // CRANIUM & OPTICS',
+          title: '重装上颌颅骨与竖瞳光学转塔',
+          desc: '长吻上颌由铆接黄铜装甲板与发蓝钢鼻梁骨构成，两侧凸起式猫眼光学镜组内置竖瞳光圈与红宝石晶状体，上颌齿槽镶嵌 18 颗精密车削的圆锥精钢獠牙。',
+          material: 'Riveted Brass & Faceted Quartz',
+          camOffset: { theta: 0.55, phi: 1.18, radius: 9.0 },
+          targetPos: new THREE.Vector3(0, 0.35, 3.8)
+        },
+        jaw: {
+          code: 'SYS-02 // HYDRAULIC MANDIBLE',
+          title: '双液压驱动铰接下颌总成',
+          desc: '下颌由高强度发蓝钢桁架与双联紫铜液压增压缸驱动，与上颌 18 颗钢牙形成严密交错咬合。在 APEX SNAP 模式下可输出 16.4 kN 瞬时锁止咬合力。',
+          material: 'Hardened Blued Steel & Copper Cylinders',
+          camOffset: { theta: 0.72, phi: 1.34, radius: 8.5 },
+          targetPos: new THREE.Vector3(0, -0.25, 3.6)
+        },
+        carapace: {
+          code: 'SYS-03 // DORSAL OSTEODERM SCUTES',
+          title: '四列棱鳞背甲与陀飞轮传动箱',
+          desc: '背部覆盖 6 排四列金字塔形棱鳞骨板（Osteoderms）。爆炸视图下背甲向上升起，完整露出躯干内部的双发条盒、中央冠轮、横向差速齿轮组与红宝石擒纵轮。',
+          material: 'Hand-Brushed Brass & Synthetic Ruby',
+          camOffset: { theta: 0.85, phi: 0.92, radius: 10.2 },
+          targetPos: new THREE.Vector3(0, 0.6, 0.2)
+        },
+        tail: {
+          code: 'SYS-04 // 8-SEG SCULLING TAIL',
+          title: '八节万向铰接推进尾椎与锯齿尾冠',
+          desc: '由 8 节渐缩装甲环与万向球头节串联，顶部竖立双排镀金锯齿背冠。游弋时各节按固定相位差产生横向 S 型正弦推进波，抵消身体偏航力矩。',
+          material: 'Turned Brass Rings & Gold Serrated Fins',
+          camOffset: { theta: 2.15, phi: 1.12, radius: 11.5 },
+          targetPos: new THREE.Vector3(0, 0.1, -4.2)
+        },
+        limbs: {
+          code: 'SYS-05 // CAM-DRIVEN QUADRUPED LIMBS',
+          title: '四足曲柄连杆爬行与划水机构',
+          desc: '前后两对机械肢采用经典爬行动物外展跨步几何（Sprawling Gait），髋部内置锥齿轮差速器，股骨配备紫铜减震弹簧，末端为四趾钢爪蹼足。',
+          material: 'Blued Steel Trusses & Copper Coils',
+          camOffset: { theta: 1.15, phi: 1.38, radius: 9.8 },
+          targetPos: new THREE.Vector3(1.2, -0.6, 0.3)
+        },
+        belly: {
+          code: 'SYS-06 // VENTRAL GASTRALIA CHASSIS',
+          title: '腹甲 V 型肋骨底盘与主传动轴',
+          desc: '腹部由 8 组 V 字形黄铜腹膜肋（Gastralia）与龙骨防撞护板组成，上方承载贯穿头尾的紫铜主传动轴，确保水下潜行时的重心稳定。',
+          material: 'Forged Bronze & Blued Keel Rails',
+          camOffset: { theta: 0.95, phi: 1.52, radius: 10.0 },
+          targetPos: new THREE.Vector3(0, -0.7, 0.2)
+        }
+      };
+
+      // ==========================================
+      // 2. THREE.JS SCENE, RENDERER & CAMERAS
+      // ==========================================
+      const container = document.getElementById('canvas-container');
+      const scene = new THREE.Scene();
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: 'high-performance',
+        preserveDrawingBuffer: true
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.20;
+      container.appendChild(renderer.domElement);
+
+      const mainCamera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 200);
+      const topCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+      const frontCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+      const sideCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+
+      const camSpherical = {
+        radius: 16.5,
+        theta: 0.78,
+        phi: 1.15,
+        target: new THREE.Vector3(0, 0.0, -0.2)
+      };
+      const camTargetSpherical = {
+        radius: 16.5,
+        theta: 0.78,
+        phi: 1.15,
+        target: new THREE.Vector3(0, 0.0, -0.2)
+      };
+
+      // ==========================================
+      // 3. PROCEDURAL STUDIO ENVIRONMENT & LIGHTS
+      // ==========================================
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+
+      function buildStudioEnvMap(themeName) {
+        const envScene = new THREE.Scene();
+        envScene.background = new THREE.Color(
+          themeName === 'parchment' ? 0xd8ccb8 : (themeName === 'obsidian' ? 0x09090d : 0x071224)
+        );
+        const warmMat = new THREE.MeshBasicMaterial({ color: 0xfffaed });
+        const goldMat = new THREE.MeshBasicMaterial({ color: 0xffc864 });
+        const coolMat = new THREE.MeshBasicMaterial({
+          color: themeName === 'obsidian' ? 0xff6b4a : 0x38bdf8
+        });
+
+        const strip1 = new THREE.Mesh(new THREE.BoxGeometry(32, 2, 12), warmMat);
+        strip1.position.set(0, 20, 8);
+        envScene.add(strip1);
+
+        const strip2 = new THREE.Mesh(new THREE.BoxGeometry(22, 12, 2), goldMat);
+        strip2.position.set(18, 5, -12);
+        envScene.add(strip2);
+
+        const strip3 = new THREE.Mesh(new THREE.BoxGeometry(2, 12, 26), coolMat);
+        strip3.position.set(-20, 5, 0);
+        envScene.add(strip3);
+
+        const strip4 = new THREE.Mesh(new THREE.SphereGeometry(2, 16, 16), warmMat);
+        strip4.scale.set(9, 1, 9);
+        strip4.position.set(0, -18, 0);
+        envScene.add(strip4);
+
+        return pmremGenerator.fromScene(envScene, 0.04).texture;
+      }
+
+      scene.environment = buildStudioEnvMap('azure');
+
+      const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 0.80);
+      scene.add(hemiLight);
+
+      const keyLight = new THREE.DirectionalLight(0xfff4d6, 2.5);
+      keyLight.position.set(10, 15, 11);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.width = 2048;
+      keyLight.shadow.mapSize.height = 2048;
+      keyLight.shadow.camera.near = 2;
+      keyLight.shadow.camera.far = 38;
+      const d = 11;
+      keyLight.shadow.camera.left = -d;
+      keyLight.shadow.camera.right = d;
+      keyLight.shadow.camera.top = d;
+      keyLight.shadow.camera.bottom = -d;
+      keyLight.shadow.bias = -0.0005;
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.55);
+      rimLight.position.set(-11, 7, -9);
+      scene.add(rimLight);
+
+      const underLight = new THREE.DirectionalLight(0xd4af37, 0.90);
+      underLight.position.set(0, -10, 5);
+      scene.add(underLight);
+
+      const coreGlowLight = new THREE.PointLight(0x38bdf8, 2.0, 8);
+      coreGlowLight.position.set(0, 0.15, 0.3);
+      scene.add(coreGlowLight);
+
+      // ==========================================
+      // 4. HOROLOGICAL MATERIALS PALETTE
+      // ==========================================
+      const materials = {
+        brassPolished: new THREE.MeshStandardMaterial({
+          color: 0xd9a74a,
+          metalness: 0.92,
+          roughness: 0.16
+        }),
+        brassBrushed: new THREE.MeshStandardMaterial({
+          color: 0xb8862d,
+          metalness: 0.86,
+          roughness: 0.30
+        }),
+        goldFiligree: new THREE.MeshStandardMaterial({
+          color: 0xf0ca6e,
+          metalness: 0.94,
+          roughness: 0.14,
+          side: THREE.DoubleSide
+        }),
+        bluedSteel: new THREE.MeshStandardMaterial({
+          color: 0x1d3b5c,
+          metalness: 0.90,
+          roughness: 0.22
+        }),
+        chromeSteel: new THREE.MeshStandardMaterial({
+          color: 0xe2e8f0,
+          metalness: 0.95,
+          roughness: 0.10
+        }),
+        copperCoil: new THREE.MeshStandardMaterial({
+          color: 0xc8643c,
+          metalness: 0.90,
+          roughness: 0.20
+        }),
+        rubyJewel: new THREE.MeshPhysicalMaterial({
+          color: 0xe11d48,
+          emissive: 0x4c0519,
+          emissiveIntensity: 0.40,
+          metalness: 0.1,
+          roughness: 0.08,
+          transparent: true,
+          opacity: 0.90
+        }),
+        crystalLens: new THREE.MeshPhysicalMaterial({
+          color: 0x38bdf8,
+          emissive: 0x0284c7,
+          emissiveIntensity: 0.35,
+          metalness: 0.15,
+          roughness: 0.08,
+          transparent: true,
+          opacity: 0.78
+        }),
+        goldLine: new THREE.LineBasicMaterial({
+          color: 0xd4af37,
+          transparent: true,
+          opacity: 0.50
+        }),
+        leaderDash: new THREE.LineDashedMaterial({
+          color: 0xd4af37,
+          dashSize: 0.18,
+          gapSize: 0.10,
+          transparent: true,
+          opacity: 0.0
+        })
+      };
+
+      // ==========================================
+      // 5. PROCEDURAL MECHANICAL COMPONENT BUILDERS
+      // ==========================================
+      const interactableMeshes = [];
+      function tagSubsystem(object3d, subsystemKey) {
+        object3d.traverse((child) => {
+          if (child.isMesh) {
+            child.userData.subsystem = subsystemKey;
+            child.castShadow = true;
+            child.receiveShadow = true;
+            interactableMeshes.push(child);
+          }
+        });
+      }
+
+      function createSpurGear(radius, teeth, thickness, spokeCount, gearMat, hubMat) {
+        const gearGroup = new THREE.Group();
+        const outerR = radius;
+        const innerR = radius * 0.85;
+        const ringInnerR = radius * 0.66;
+        const hubR = radius * 0.26;
+
+        const shape = new THREE.Shape();
+        const totalSteps = teeth * 4;
+        for (let i = 0; i <= totalSteps; i++) {
+          const angle = (i / totalSteps) * Math.PI * 2;
+          const mod = i % 4;
+          const r = (mod === 1 || mod === 2) ? outerR : innerR;
+          const x = Math.cos(angle) * r;
+          const y = Math.sin(angle) * r;
+          if (i === 0) shape.moveTo(x, y);
+          else shape.lineTo(x, y);
+        }
+
+        if (spokeCount > 0 && radius > 0.22) {
+          for (let s = 0; s < spokeCount; s++) {
+            const aStart = (s / spokeCount) * Math.PI * 2 + 0.16;
+            const aEnd = ((s + 1) / spokeCount) * Math.PI * 2 - 0.16;
+            if (aEnd > aStart) {
+              const hole = new THREE.Path();
+              const arcSteps = 8;
+              for (let k = 0; k <= arcSteps; k++) {
+                const a = aStart + (k / arcSteps) * (aEnd - aStart);
+                const px = Math.cos(a) * ringInnerR;
+                const py = Math.sin(a) * ringInnerR;
+                if (k === 0) hole.moveTo(px, py);
+                else hole.lineTo(px, py);
+              }
+              for (let k = arcSteps; k >= 0; k--) {
+                const a = aStart + (k / arcSteps) * (aEnd - aStart);
+                const px = Math.cos(a) * (hubR * 1.15);
+                const py = Math.sin(a) * (hubR * 1.15);
+                hole.lineTo(px, py);
+              }
+              hole.closePath();
+              shape.holes.push(hole);
+            }
+          }
+        }
+
+        const extrudeSettings = {
+          depth: thickness,
+          bevelEnabled: true,
+          bevelSegments: 1,
+          steps: 1,
+          bevelSize: thickness * 0.12,
+          bevelThickness: thickness * 0.12
+        };
+        const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        geo.center();
+        const mesh = new THREE.Mesh(geo, gearMat || materials.brassPolished);
+        gearGroup.add(mesh);
+
+        const collarGeo = new THREE.CylinderGeometry(hubR, hubR, thickness * 1.6, 16);
+        collarGeo.rotateX(Math.PI / 2);
+        const collar = new THREE.Mesh(collarGeo, hubMat || materials.bluedSteel);
+        gearGroup.add(collar);
+
+        const jewelGeo = new THREE.CylinderGeometry(hubR * 0.55, hubR * 0.55, thickness * 1.85, 12);
+        jewelGeo.rotateX(Math.PI / 2);
+        const jewel = new THREE.Mesh(jewelGeo, materials.rubyJewel);
+        gearGroup.add(jewel);
+
+        const axleGeo = new THREE.CylinderGeometry(hubR * 0.22, hubR * 0.22, thickness * 2.5, 10);
+        axleGeo.rotateX(Math.PI / 2);
+        const axle = new THREE.Mesh(axleGeo, materials.brassPolished);
+        gearGroup.add(axle);
+
+        return gearGroup;
+      }
+
+      // Helper: Pyramidal Crocodilian Osteoderm Armor Scute
+      function createOsteodermScute(w, h, len, mat) {
+        const scuteGroup = new THREE.Group();
+        const basePlate = new THREE.Mesh(
+          new THREE.BoxGeometry(w, 0.05, len),
+          materials.bluedSteel
+        );
+        scuteGroup.add(basePlate);
+
+        const ridgeGeo = new THREE.ConeGeometry(w * 0.44, h, 4);
+        ridgeGeo.rotateY(Math.PI / 4);
+        ridgeGeo.scale(0.85, 1.0, len / Math.max(0.1, w));
+        const ridge = new THREE.Mesh(ridgeGeo, mat || materials.brassPolished);
+        ridge.position.y = h * 0.5 + 0.02;
+        scuteGroup.add(ridge);
+
+        return scuteGroup;
+      }
+
+      // ==========================================
+      // 6. ASSEMBLE THE CROCODILE ("CROCODYLUS MECHANICA")
+      // ==========================================
+      const crocRoot = new THREE.Group();
+      scene.add(crocRoot);
+
+      const subsystems = {};
+      function registerSubsystem(key, group, explodeVec, parentGroup) {
+        group.userData.basePos = group.position.clone();
+        group.userData.explodeVec = explodeVec;
+        subsystems[key] = group;
+        (parentGroup || crocRoot).add(group);
+      }
+
+      // ------------------------------------------
+      // A. UPPER SKULL, SNOUT & REPTILIAN OPTICS (SYS-01)
+      // ------------------------------------------
+      const headMasterGroup = new THREE.Group();
+      headMasterGroup.position.set(0, 0.12, 2.25);
+      crocRoot.add(headMasterGroup);
+
+      const skullGroup = new THREE.Group();
+      skullGroup.position.set(0, 0.12, 0.0);
+      registerSubsystem('skull', skullGroup, new THREE.Vector3(0, 1.35, 1.85), headMasterGroup);
+
+      // Cranium Rear Table (Broad Armored Skull Deck)
+      const craniumDeck = new THREE.Mesh(
+        new THREE.BoxGeometry(1.38, 0.34, 1.05),
+        materials.brassPolished
+      );
+      craniumDeck.position.set(0, 0.14, 0.38);
+      skullGroup.add(craniumDeck);
+
+      // Side Temporal cheek armor plates
+      [-1, 1].forEach((side) => {
+        const cheek = new THREE.Mesh(
+          new THREE.BoxGeometry(0.18, 0.36, 1.15),
+          materials.bluedSteel
+        );
+        cheek.position.set(side * 0.68, 0.02, 0.35);
+        cheek.rotation.z = side * -0.18;
+        skullGroup.add(cheek);
+
+        // Raised Periscopic Reptilian Optical Turrets (Crocodile Eyes sit high on the skull!)
+        const eyeTurret = new THREE.Group();
+        eyeTurret.position.set(side * 0.44, 0.34, 0.58);
+
+        const housing = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.20, 0.24, 0.32, 12),
+          materials.bluedSteel
+        );
+        housing.rotation.z = Math.PI / 2;
+        eyeTurret.add(housing);
+
+        const bezel = new THREE.Mesh(
+          new THREE.TorusGeometry(0.19, 0.032, 10, 20),
+          materials.brassPolished
+        );
+        bezel.position.x = side * 0.15;
+        bezel.rotation.y = Math.PI / 2;
+        eyeTurret.add(bezel);
+
+        const eyeLens = new THREE.Mesh(
+          new THREE.SphereGeometry(0.17, 14, 14),
+          materials.crystalLens
+        );
+        eyeLens.scale.set(0.55, 1.0, 1.0);
+        eyeLens.position.x = side * 0.14;
+        eyeTurret.add(eyeLens);
+
+        // Vertical Reptilian Slit Pupil (Ruby & Dark Steel)
+        const slitPupil = new THREE.Mesh(
+          new THREE.BoxGeometry(0.06, 0.26, 0.045),
+          materials.rubyJewel
+        );
+        slitPupil.position.x = side * 0.20;
+        eyeTurret.add(slitPupil);
+
+        // Armored Supraorbital Brow Ridge
+        const brow = new THREE.Mesh(
+          new THREE.BoxGeometry(0.28, 0.06, 0.42),
+          materials.brassPolished
+        );
+        brow.position.set(side * 0.06, 0.19, 0);
+        brow.rotation.z = side * 0.25;
+        eyeTurret.add(brow);
+
+        skullGroup.add(eyeTurret);
+      });
+
+      // Tapered Elongated Snout (5 Progressive Armored Sections + Nasal Boss)
+      for (let i = 0; i < 5; i++) {
+        const t = i / 4;
+        const zPos = 1.05 + i * 0.46;
+        const w = 1.18 * (1 - t * 0.42) + (i === 4 ? 0.12 : 0); // Slight bulbous tip at nostrils
+        const h = 0.26 * (1 - t * 0.32);
+
+        const snoutSeg = new THREE.Mesh(
+          new THREE.BoxGeometry(w, h, 0.48),
+          i % 2 === 0 ? materials.brassPolished : materials.bluedSteel
+        );
+        snoutSeg.position.set(0, 0.04 - t * 0.04, zPos);
+        skullGroup.add(snoutSeg);
+
+        // Dorsal snout scute ridge
+        const snoutScute = createOsteodermScute(w * 0.48, 0.08, 0.36, materials.brassBrushed);
+        snoutScute.position.set(0, h * 0.5 + 0.04 - t * 0.04, zPos);
+        skullGroup.add(snoutScute);
+      }
+
+      // Twin Mechanical Nostrils at Snout Tip (z = 2.95)
+      [-1, 1].forEach((side) => {
+        const nostril = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.09, 0.11, 0.12, 10),
+          materials.copperCoil
+        );
+        nostril.position.set(side * 0.18, 0.14, 2.88);
+        skullGroup.add(nostril);
+
+        const nostrilCore = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.055, 0.055, 0.14, 10),
+          materials.rubyJewel
+        );
+        nostrilCore.position.set(side * 0.18, 0.14, 2.88);
+        skullGroup.add(nostrilCore);
+      });
+
+      // 18 Conical Chrome-Steel Upper Teeth (9 per side along the maxilla)
+      for (let i = 0; i < 9; i++) {
+        const zTooth = 0.85 + i * 0.24;
+        const t = i / 8;
+        const xHalf = (1.12 * (1 - t * 0.42)) * 0.48;
+        const toothLen = (i === 2 || i === 6) ? 0.22 : 0.15; // Enlarged canine-like 4th teeth!
+        [-1, 1].forEach((side) => {
+          const tooth = new THREE.Mesh(
+            new THREE.ConeGeometry(0.036, toothLen, 8),
+            materials.chromeSteel
+          );
+          tooth.rotation.x = Math.PI; // Pointing down
+          tooth.position.set(side * xHalf, -0.10, zTooth);
+          skullGroup.add(tooth);
+        });
+      }
+
+      tagSubsystem(skullGroup, 'skull');
+
+      // ------------------------------------------
+      // B. HYDRAULIC MANDIBLE / LOWER JAW (SYS-02)
+      // ------------------------------------------
+      const jawExplodeContainer = new THREE.Group();
+      jawExplodeContainer.position.set(0, -0.04, 0.05);
+      registerSubsystem('jaw', jawExplodeContainer, new THREE.Vector3(0, -1.25, 1.95), headMasterGroup);
+
+      // Inner pivot group that rotates around X-axis for Jaw Gape / Bite!
+      const jawPivotGroup = new THREE.Group();
+      jawExplodeContainer.add(jawPivotGroup);
+
+      // Hinge Axle & Twin Ruby Pivot Bearings at jaw articulation
+      const jawAxle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.11, 0.11, 1.52, 14),
+        materials.brassPolished
+      );
+      jawAxle.rotation.z = Math.PI / 2;
+      jawPivotGroup.add(jawAxle);
+
+      // Twin Lower Jaw Ramus Beams & Symphysis Plate
+      for (let i = 0; i < 5; i++) {
+        const t = i / 4;
+        const zPos = 0.45 + i * 0.50;
+        const w = 1.22 * (1 - t * 0.46);
+        const h = 0.20 * (1 - t * 0.30);
+
+        const jawSeg = new THREE.Mesh(
+          new THREE.BoxGeometry(w, h, 0.52),
+          i % 2 === 0 ? materials.bluedSteel : materials.brassBrushed
+        );
+        jawSeg.position.set(0, -0.06, zPos);
+        jawPivotGroup.add(jawSeg);
+
+        // Internal copper tongue plate / hydraulic manifold
+        if (i < 4) {
+          const tonguePlate = new THREE.Mesh(
+            new THREE.BoxGeometry(w * 0.65, 0.05, 0.44),
+            materials.copperCoil
+          );
+          tonguePlate.position.set(0, 0.04, zPos);
+          jawPivotGroup.add(tonguePlate);
+        }
+      }
+
+      // 18 Conical Chrome-Steel Lower Teeth (interlocking with upper teeth)
+      for (let i = 0; i < 9; i++) {
+        const zTooth = 0.73 + i * 0.24;
+        const t = i / 8;
+        const xHalf = (1.12 * (1 - t * 0.46)) * 0.45;
+        const toothLen = (i === 1 || i === 5) ? 0.21 : 0.14;
+        [-1, 1].forEach((side) => {
+          const tooth = new THREE.Mesh(
+            new THREE.ConeGeometry(0.034, toothLen, 8),
+            materials.chromeSteel
+          );
+          tooth.position.set(side * xHalf, 0.08, zTooth);
+          jawPivotGroup.add(tooth);
+        });
+      }
+
+      // Twin Hydraulic Bite Actuators (Left & Right Cylinders connecting Skull to Lower Jaw)
+      const jawHydraulicRods = [];
+      [-1, 1].forEach((side) => {
+        const cylHousing = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.065, 0.065, 0.68, 10),
+          materials.copperCoil
+        );
+        cylHousing.position.set(side * 0.56, 0.10, 0.65);
+        cylHousing.rotation.x = 0.45;
+        skullGroup.add(cylHousing);
+
+        const pistonRod = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.035, 0.035, 0.65, 8),
+          materials.chromeSteel
+        );
+        pistonRod.position.set(side * 0.56, 0.12, 0.68);
+        pistonRod.rotation.x = -0.35;
+        jawPivotGroup.add(pistonRod);
+        jawHydraulicRods.push(pistonRod);
+      });
+
+      tagSubsystem(jawExplodeContainer, 'jaw');
+
+      // ------------------------------------------
+      // C. DORSAL OSTEODERM CARAPACE & INTERNAL GEARBOX (SYS-03)
+      // ------------------------------------------
+      const carapaceGroup = new THREE.Group();
+      carapaceGroup.position.set(0, 0.48, 0.15);
+      registerSubsystem('carapace', carapaceGroup, new THREE.Vector3(0, 1.85, 0));
+
+      // 6 Rows of 4-Column Pyramidal Osteoderm Scutes on Brass Rib Bridges
+      for (let row = 0; row < 6; row++) {
+        const zRow = 1.65 - row * 0.66;
+        const widthFactor = 1.0 - Math.pow((row - 2.5) / 3.8, 2) * 0.32;
+        const archBridge = new THREE.Mesh(
+          new THREE.TorusGeometry(1.12 * widthFactor, 0.045, 10, 24, Math.PI),
+          row % 2 === 0 ? materials.brassPolished : materials.bluedSteel
+        );
+        archBridge.position.set(0, -0.38, zRow);
+        carapaceGroup.add(archBridge);
+
+        // 4 Osteoderm Armor Scutes across each dorsal row
+        [-1.5, -0.5, 0.5, 1.5].forEach((colIdx) => {
+          const xPos = colIdx * 0.42 * widthFactor;
+          const yCurve = Math.cos(colIdx * 0.35) * 0.26 - 0.12;
+          const scuteH = Math.abs(colIdx) < 1 ? 0.24 : 0.16;
+          const scute = createOsteodermScute(
+            0.34 * widthFactor,
+            scuteH,
+            0.52,
+            Math.abs(colIdx) < 1 ? materials.brassPolished : materials.brassBrushed
+          );
+          scute.position.set(xPos, yCurve, zRow);
+          scute.rotation.z = -colIdx * 0.18;
+          carapaceGroup.add(scute);
+        });
+      }
+
+      // Internal Horological Torque Engine (attached to torso core, tagged as 'carapace' for inspection)
+      const gearboxGroup = new THREE.Group();
+      gearboxGroup.position.set(0, 0.12, 0.15);
+      crocRoot.add(gearboxGroup);
+
+      const animatedGears = [];
+
+      // Longitudinal Main Driveshaft (Chrome Steel + Copper Coils)
+      const mainShaft = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.08, 3.8, 16),
+        materials.chromeSteel
+      );
+      mainShaft.rotation.x = Math.PI / 2;
+      gearboxGroup.add(mainShaft);
+
+      // Twin Copper Mainspring Barrels
+      [-0.85, 0.85].forEach((zOff) => {
+        const barrel = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.42, 0.42, 0.55, 24),
+          materials.copperCoil
+        );
+        barrel.rotation.x = Math.PI / 2;
+        barrel.position.set(0, 0, zOff);
+        gearboxGroup.add(barrel);
+      });
+
+      // 6 Meshing Horological Spur & Bevel Gears inside the torso
+      const gearConfigs = [
+        { pos: [0, 0.05, 1.35], r: 0.62, teeth: 24, thick: 0.16, spokes: 6, axis: 'z', ratio: 1.2, rotY: 0 },
+        { pos: [0, 0.05, 0.35], r: 0.72, teeth: 28, thick: 0.18, spokes: 6, axis: 'z', ratio: -1.0, rotY: 0 },
+        { pos: [0, 0.05, -0.65], r: 0.66, teeth: 24, thick: 0.16, spokes: 5, axis: 'z', ratio: 1.2, rotY: 0 },
+        { pos: [0, 0.05, -1.45], r: 0.54, teeth: 20, thick: 0.14, spokes: 5, axis: 'z', ratio: -1.5, rotY: 0 },
+        // Horizontal Dorsal Tourbillon Balance Wheel
+        { pos: [0, 0.52, 0.0], r: 0.48, teeth: 20, thick: 0.10, spokes: 4, axis: 'z', ratio: 3.2, rotX: Math.PI / 2, oscillate: true },
+        // Lateral Limb Differential Gears
+        { pos: [-0.68, -0.05, 1.15], r: 0.40, teeth: 16, thick: 0.12, spokes: 4, axis: 'z', ratio: 1.8, rotY: Math.PI / 2 },
+        { pos: [0.68, -0.05, 1.15], r: 0.40, teeth: 16, thick: 0.12, spokes: 4, axis: 'z', ratio: -1.8, rotY: Math.PI / 2 },
+        { pos: [-0.68, -0.05, -1.15], r: 0.40, teeth: 16, thick: 0.12, spokes: 4, axis: 'z', ratio: -1.8, rotY: Math.PI / 2 },
+        { pos: [0.68, -0.05, -1.15], r: 0.40, teeth: 16, thick: 0.12, spokes: 4, axis: 'z', ratio: 1.8, rotY: Math.PI / 2 }
+      ];
+
+      gearConfigs.forEach((cfg, idx) => {
+        const g = createSpurGear(
+          cfg.r,
+          cfg.teeth,
+          cfg.thick,
+          cfg.spokes,
+          idx % 2 === 0 ? materials.brassPolished : materials.goldFiligree,
+          materials.bluedSteel
+        );
+        g.position.set(cfg.pos[0], cfg.pos[1], cfg.pos[2]);
+        if (cfg.rotY) g.rotation.y = cfg.rotY;
+        if (cfg.rotX) g.rotation.x = cfg.rotX;
+        gearboxGroup.add(g);
+        animatedGears.push({ mesh: g, axis: cfg.axis, ratio: cfg.ratio, oscillate: !!cfg.oscillate });
+      });
+
+      tagSubsystem(carapaceGroup, 'carapace');
+      tagSubsystem(gearboxGroup, 'carapace');
+
+      // ------------------------------------------
+      // D. 8-SEGMENT ARTICULATED SCULLING TAIL (SYS-04)
+      // ------------------------------------------
+      const tailGroup = new THREE.Group();
+      tailGroup.position.set(0, 0.08, -1.95);
+      registerSubsystem('tail', tailGroup, new THREE.Vector3(0, 0.15, -2.65));
+
+      const tailSegments = [];
+      const numTailSegs = 8;
+
+      for (let i = 0; i < numTailSegs; i++) {
+        const segGroup = new THREE.Group();
+        const segLen = 0.72;
+        const t = i / (numTailSegs - 1);
+        const w = 1.25 * (1 - t * 0.78);
+        const h = 0.88 * (1 - t * 0.62);
+
+        segGroup.position.set(0, 0, -i * segLen);
+        segGroup.userData.baseZ = -i * segLen;
+        segGroup.userData.index = i;
+
+        // Octagonal Armored Segment Shell
+        const shellGeo = new THREE.CylinderGeometry(w * 0.44, w * 0.50, segLen * 0.82, 8);
+        shellGeo.rotateX(Math.PI / 2);
+        shellGeo.scale(1.0, h / Math.max(0.2, w), 1.0);
+        const shell = new THREE.Mesh(
+          shellGeo,
+          i % 2 === 0 ? materials.brassPolished : materials.bluedSteel
+        );
+        shell.position.z = -segLen * 0.42;
+        segGroup.add(shell);
+
+        // Universal Copper Gimbal Ball Joint between tail vertebrae
+        const gimbal = new THREE.Mesh(
+          new THREE.SphereGeometry(Math.max(0.10, w * 0.28), 12, 12),
+          materials.copperCoil
+        );
+        segGroup.add(gimbal);
+
+        // Twin Dorsal Serrated Tail Crests (merging into a single tall sculling blade on last 3 segments!)
+        if (i < 5) {
+          [-1, 1].forEach((side) => {
+            const crest = createOsteodermScute(0.16, 0.26 * (1 - t * 0.3), segLen * 0.65, materials.goldFiligree);
+            crest.position.set(side * w * 0.26, h * 0.48, -segLen * 0.42);
+            segGroup.add(crest);
+          });
+        } else {
+          // Tall single vertical sculling paddle fin at tail tip
+          const bladeGeo = new THREE.BoxGeometry(0.05, 0.42, segLen * 0.76);
+          const blade = new THREE.Mesh(bladeGeo, materials.goldFiligree);
+          blade.position.set(0, h * 0.5 + 0.16, -segLen * 0.42);
+          segGroup.add(blade);
+        }
+
+        tailGroup.add(segGroup);
+        tailSegments.push(segGroup);
+      }
+
+      tagSubsystem(tailGroup, 'tail');
+
+      // ------------------------------------------
+      // E. FOUR CAM-DRIVEN SPRAWLING LIMBS (SYS-05)
+      // ------------------------------------------
+      const limbsLeftGroup = new THREE.Group();
+      limbsLeftGroup.position.set(-0.92, -0.12, 0.15);
+      registerSubsystem('limbsL', limbsLeftGroup, new THREE.Vector3(-2.1, -0.45, 0));
+
+      const limbsRightGroup = new THREE.Group();
+      limbsRightGroup.position.set(0.92, -0.12, 0.15);
+      registerSubsystem('limbsR', limbsRightGroup, new THREE.Vector3(2.1, -0.45, 0));
+
+      const limbAssemblies = [];
+
+      function buildCrocLimb(side, isFront) {
+        const limbRoot = new THREE.Group();
+        limbRoot.position.set(0, 0, isFront ? 1.05 : -1.15);
+
+        // Shoulder / Hip Planetary Bevel Gear Housing
+        const hipGear = createSpurGear(0.32, 14, 0.12, 4, materials.brassPolished, materials.rubyJewel);
+        hipGear.rotation.y = Math.PI / 2;
+        limbRoot.add(hipGear);
+
+        // Upper Femur / Humerus Sprawling Group
+        const femurGroup = new THREE.Group();
+        femurGroup.rotation.z = side * -1.05; // Classic sprawling reptile posture
+
+        const femurLen = isFront ? 0.92 : 1.08;
+        const femurTruss = new THREE.Mesh(
+          new THREE.BoxGeometry(0.18, femurLen, 0.24),
+          materials.bluedSteel
+        );
+        femurTruss.position.y = -femurLen * 0.5;
+        femurGroup.add(femurTruss);
+
+        // Copper Hydraulic Damper Coil around Femur
+        const damperCoil = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.13, 0.13, femurLen * 0.55, 12),
+          materials.copperCoil
+        );
+        damperCoil.position.y = -femurLen * 0.48;
+        femurGroup.add(damperCoil);
+
+        // Knee / Elbow Brass Hinge Drum
+        const kneeDrum = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.14, 0.14, 0.28, 12),
+          materials.brassPolished
+        );
+        kneeDrum.rotation.x = Math.PI / 2;
+        kneeDrum.position.y = -femurLen;
+        femurGroup.add(kneeDrum);
+
+        // Lower Crus / Forearm & Webbed Claw Foot
+        const tibiaGroup = new THREE.Group();
+        tibiaGroup.position.y = -femurLen;
+        tibiaGroup.rotation.z = side * 0.88;
+
+        const tibiaLen = isFront ? 0.78 : 0.88;
+        const tibiaShaft = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.09, 0.07, tibiaLen, 10),
+          materials.brassBrushed
+        );
+        tibiaShaft.position.y = -tibiaLen * 0.5;
+        tibiaGroup.add(tibiaShaft);
+
+        // Webbed Mechanical Foot & 4 Curved Steel Claws
+        const footGroup = new THREE.Group();
+        footGroup.position.set(side * 0.08, -tibiaLen, 0.12);
+
+        const palmPlate = new THREE.Mesh(
+          new THREE.BoxGeometry(0.38, 0.07, 0.46),
+          materials.bluedSteel
+        );
+        footGroup.add(palmPlate);
+
+        [-0.14, -0.05, 0.05, 0.14].forEach((xClaw) => {
+          const claw = new THREE.Mesh(
+            new THREE.ConeGeometry(0.032, 0.24, 6),
+            materials.chromeSteel
+          );
+          claw.rotation.x = Math.PI * 0.52;
+          claw.position.set(xClaw, -0.02, 0.30);
+          footGroup.add(claw);
+        });
+
+        tibiaGroup.add(footGroup);
+        femurGroup.add(tibiaGroup);
+        limbRoot.add(femurGroup);
+
+        limbAssemblies.push({
+          root: limbRoot,
+          femur: femurGroup,
+          tibia: tibiaGroup,
+          foot: footGroup,
+          side,
+          isFront
+        });
+
+        return limbRoot;
+      }
+
+      limbsLeftGroup.add(buildCrocLimb(-1, true));
+      limbsLeftGroup.add(buildCrocLimb(-1, false));
+      limbsRightGroup.add(buildCrocLimb(1, true));
+      limbsRightGroup.add(buildCrocLimb(1, false));
+
+      tagSubsystem(limbsLeftGroup, 'limbs');
+      tagSubsystem(limbsRightGroup, 'limbs');
+
+      // ------------------------------------------
+      // F. VENTRAL GASTRALIA CHASSIS / BELLY RIBS (SYS-06)
+      // ------------------------------------------
+      const bellyGroup = new THREE.Group();
+      bellyGroup.position.set(0, -0.34, 0.15);
+      registerSubsystem('belly', bellyGroup, new THREE.Vector3(0, -1.55, 0));
+
+      // Twin Longitudinal Ventral Keel Rails
+      [-0.48, 0.48].forEach((xPos) => {
+        const keelRail = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.055, 0.055, 3.6, 12),
+          materials.bluedSteel
+        );
+        keelRail.rotation.x = Math.PI / 2;
+        keelRail.position.set(xPos, 0, 0);
+        bellyGroup.add(keelRail);
+      });
+
+      // 8 V-Shaped Brass Gastralia Belly Armor Ribs
+      for (let i = 0; i < 8; i++) {
+        const zPos = 1.55 - i * 0.44;
+        const wFactor = 1.0 - Math.pow((i - 3.5) / 4.5, 2) * 0.30;
+        [-1, 1].forEach((side) => {
+          const vRib = new THREE.Mesh(
+            new THREE.BoxGeometry(0.95 * wFactor, 0.06, 0.18),
+            i % 2 === 0 ? materials.brassPolished : materials.copperCoil
+          );
+          vRib.position.set(side * 0.42 * wFactor, -0.04, zPos);
+          vRib.rotation.y = side * -0.25;
+          vRib.rotation.z = side * 0.18;
+          bellyGroup.add(vRib);
+        });
+      }
+
+      tagSubsystem(bellyGroup, 'belly');
+
+      // ==========================================
+      // 7. BLUEPRINT ASTROLABE RINGS, GRID & LEADER LINES
+      // ==========================================
+      const floorGroup = new THREE.Group();
+      floorGroup.position.y = -2.25;
+      scene.add(floorGroup);
+
+      [5.2, 8.4, 11.5].forEach((r, idx) => {
+        const ringGeo = new THREE.RingGeometry(r - 0.03, r, 96);
+        ringGeo.rotateX(-Math.PI / 2);
+        const ring = new THREE.Mesh(
+          ringGeo,
+          new THREE.MeshBasicMaterial({
+            color: idx === 1 ? 0xd4af37 : 0x38bdf8,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: idx === 1 ? 0.30 : 0.16
+          })
+        );
+        floorGroup.add(ring);
+      });
+
+      const tickVertices = [];
+      for (let deg = 0; deg < 360; deg += 5) {
+        const rad = THREE.MathUtils.degToRad(deg);
+        const rIn = (deg % 30 === 0) ? 7.8 : 8.15;
+        const rOut = 8.4;
+        tickVertices.push(
+          Math.cos(rad) * rIn, 0, Math.sin(rad) * rIn,
+          Math.cos(rad) * rOut, 0, Math.sin(rad) * rOut
+        );
+      }
+      const tickGeo = new THREE.BufferGeometry();
+      tickGeo.setAttribute('position', new THREE.Float32BufferAttribute(tickVertices, 3));
+      const tickLines = new THREE.LineSegments(tickGeo, materials.goldLine);
+      floorGroup.add(tickLines);
+
+      const shadowPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(45, 45),
+        new THREE.ShadowMaterial({ opacity: 0.30 })
+      );
+      shadowPlane.rotation.x = -Math.PI / 2;
+      shadowPlane.position.y = -2.26;
+      shadowPlane.receiveShadow = true;
+      scene.add(shadowPlane);
+
+      // Dashed Engineering Leader Lines for Exploded Subsystems
+      const leaderLineGeo = new THREE.BufferGeometry();
+      const numSubKeys = Object.keys(subsystems).length;
+      const leaderPositions = new Float32Array(numSubKeys * 2 * 3);
+      leaderLineGeo.setAttribute('position', new THREE.BufferAttribute(leaderPositions, 3));
+      const leaderLines = new THREE.LineSegments(leaderLineGeo, materials.leaderDash);
+      crocRoot.add(leaderLines);
+
+      // Hydro-Slipstream Particles
+      const streamCount = 100;
+      const streamGeo = new THREE.BufferGeometry();
+      const streamPositions = new Float32Array(streamCount * 3);
+      for (let i = 0; i < streamCount; i++) {
+        streamPositions[i * 3] = (Math.random() - 0.5) * 15;
+        streamPositions[i * 3 + 1] = (Math.random() - 0.5) * 4;
+        streamPositions[i * 3 + 2] = (Math.random() - 0.5) * 18;
+      }
+      streamGeo.setAttribute('position', new THREE.BufferAttribute(streamPositions, 3));
+      const streamMat = new THREE.PointsMaterial({
+        color: 0xd4af37,
+        size: 0.055,
+        transparent: true,
+        opacity: 0.42
+      });
+      const streamParticles = new THREE.Points(streamGeo, streamMat);
+      scene.add(streamParticles);
+
+      // ==========================================
+      // 8. 3D INTERACTIVE CALLOUT PINS
+      // ==========================================
+      const annotationsLayer = document.getElementById('annotations-layer');
+      const calloutDefs = [
+        { key: 'skull', num: '01', label: 'CRANIUM & SLIT OPTICS', anchorObj: skullGroup, offset: new THREE.Vector3(0, 0.55, 1.5) },
+        { key: 'jaw', num: '02', label: '16.4kN HYDRAULIC JAW', anchorObj: jawExplodeContainer, offset: new THREE.Vector3(0.55, -0.35, 1.9) },
+        { key: 'carapace', num: '03', label: 'OSTEODERM & GEARBOX', anchorObj: carapaceGroup, offset: new THREE.Vector3(0, 0.65, 0.2) },
+        { key: 'tail', num: '04', label: '8-SEG SCULLING TAIL', anchorObj: tailGroup, offset: new THREE.Vector3(0, 0.55, -2.8) },
+        { key: 'limbs', num: '05', label: 'CAM-DRIVEN LIMBS', anchorObj: limbsRightGroup, offset: new THREE.Vector3(0.65, -0.35, 1.0) },
+        { key: 'belly', num: '06', label: 'GASTRALIA CHASSIS', anchorObj: bellyGroup, offset: new THREE.Vector3(-0.6, -0.45, 0.0) }
+      ];
+
+      const calloutElements = calloutDefs.map((def) => {
+        const el = document.createElement('div');
+        el.className = 'callout-pin flex items-center gap-2 group';
+        el.innerHTML = `
+          <div class="callout-dot"></div>
+          <div class="hud-panel px-2 py-0.5 rounded-sm font-mono-tech text-[10px] tracking-wider whitespace-nowrap opacity-85 group-hover:opacity-100 transition-opacity" style="color: var(--text-main);">
+            <span style="color: var(--accent-gold);">${def.num}</span> ${def.label}
+          </div>
+        `;
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectSubsystem(def.key);
+        });
+        annotationsLayer.appendChild(el);
+        return { def, el };
+      });
+
+      // ==========================================
+      // 9. WEB AUDIO API HEAVY RATCHET & JAW SNAP SYNTH
+      // ==========================================
+      let audioCtx = null;
+      let lastTickTime = 0;
+
+      function initAudioIfNeeded() {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      }
+
+      function playMechanicalClank(isHeavySnap) {
+        if (!state.soundEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = isHeavySnap ? 'sawtooth' : 'triangle';
+        osc.frequency.setValueAtTime(isHeavySnap ? 680 : 1180, now);
+        osc.frequency.exponentialRampToValueAtTime(isHeavySnap ? 110 : 240, now + (isHeavySnap ? 0.055 : 0.028));
+
+        gain.gain.setValueAtTime(isHeavySnap ? 0.065 : 0.026, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + (isHeavySnap ? 0.06 : 0.03));
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + (isHeavySnap ? 0.065 : 0.035));
+      }
+
+      // ==========================================
+      // 10. UI CONTROLS & EVENT HANDLERS
+      // ==========================================
+      function selectSubsystem(key) {
+        state.selectedPart = key;
+        const info = SUBSYSTEM_INFO[key] || SUBSYSTEM_INFO.all;
+        document.getElementById('part-code').textContent = info.code;
+        document.getElementById('part-title').textContent = info.title;
+        document.getElementById('part-desc').textContent = info.desc;
+        document.getElementById('part-material').textContent = info.material;
+
+        // Highlight active 1-6 callout pin on the 3D overlay
+        calloutElements.forEach(({ def, el }) => {
+          el.classList.toggle('active-pin', def.key === key);
+        });
+
+        // Subtle pulse on the bottom-left inspector card
+        const card = document.getElementById('inspector-card');
+        if (card) {
+          card.style.borderColor = (key && key !== 'all') ? 'var(--accent-gold)' : 'var(--border-line)';
+          card.style.boxShadow = (key && key !== 'all') ? '0 0 18px rgba(212, 175, 55, 0.22)' : 'none';
+        }
+
+        const resetBtn = document.getElementById('btn-reset-focus');
+        if (key && key !== 'all' && info.camOffset) {
+          resetBtn.classList.remove('hidden');
+          camTargetSpherical.theta = info.camOffset.theta;
+          camTargetSpherical.phi = info.camOffset.phi;
+          camTargetSpherical.radius = info.camOffset.radius;
+          camTargetSpherical.target.copy(info.targetPos);
+        } else {
+          resetBtn.classList.add('hidden');
+          camTargetSpherical.target.set(0, 0.0, -0.2);
+          camTargetSpherical.radius = 16.5;
+        }
+      }
+
+      document.getElementById('btn-reset-focus').addEventListener('click', () => {
+        selectSubsystem('all');
+      });
+
+      const btnProwl = document.getElementById('btn-prowl');
+      const statusBadge = document.getElementById('status-badge');
+      const prowlDot = document.getElementById('prowl-dot');
+      const prowlBtnText = document.getElementById('prowl-btn-text');
+
+      btnProwl.addEventListener('click', () => {
+        state.prowlActive = !state.prowlActive;
+        btnProwl.classList.toggle('active', state.prowlActive);
+        if (state.prowlActive) {
+          prowlBtnText.textContent = 'SWIM / PROWL';
+          statusBadge.textContent = state.snapMode ? 'APEX SNAP OVERDRIVE' : 'PROWL ACTIVE';
+          prowlDot.classList.add('animate-ping');
+        } else {
+          prowlBtnText.textContent = 'IDLE (LOCKED)';
+          statusBadge.textContent = 'ESCAPEMENT IDLE';
+          prowlDot.classList.remove('animate-ping');
+        }
+        updateTelemetryDisplay();
+      });
+
+      const btnSnapMode = document.getElementById('btn-snap-mode');
+      btnSnapMode.addEventListener('click', () => {
+        state.snapMode = !state.snapMode;
+        state.manualJawDeg = null;
+        btnSnapMode.classList.toggle('active', state.snapMode);
+        if (!state.prowlActive && state.snapMode) {
+          state.prowlActive = true;
+          btnProwl.classList.add('active');
+          prowlBtnText.textContent = 'SWIM / PROWL';
+          prowlDot.classList.add('animate-ping');
+        }
+        statusBadge.textContent = state.snapMode ? 'APEX SNAP OVERDRIVE' : 'PROWL ACTIVE';
+        updateTelemetryDisplay();
+      });
+
+      const sliderExplode = document.getElementById('slider-explode');
+      const explodePct = document.getElementById('explode-pct');
+
+      function setExplodeTarget(val) {
+        state.targetExplode = val / 100;
+        sliderExplode.value = val;
+        explodePct.textContent = `${Math.round(val)}%`;
+      }
+
+      sliderExplode.addEventListener('input', (e) => {
+        setExplodeTarget(parseFloat(e.target.value));
+      });
+      document.getElementById('btn-assembled').addEventListener('click', () => setExplodeTarget(0));
+      document.getElementById('btn-exploded').addEventListener('click', () => setExplodeTarget(100));
+
+      const sliderTempo = document.getElementById('slider-tempo');
+      const tempoVal = document.getElementById('tempo-val');
+      sliderTempo.addEventListener('input', (e) => {
+        state.tempo = parseFloat(e.target.value) / 100;
+        tempoVal.textContent = `${state.tempo.toFixed(1)}x`;
+        updateTelemetryDisplay();
+      });
+
+      const sliderJaw = document.getElementById('slider-jaw');
+      const labelJawSlider = document.getElementById('label-jaw-slider');
+      sliderJaw.addEventListener('input', (e) => {
+        state.manualJawDeg = parseFloat(e.target.value);
+        labelJawSlider.textContent = `${Math.round(state.manualJawDeg)}° (MANUAL)`;
+        document.getElementById('metric-gape').textContent = `${Math.round(state.manualJawDeg)}°`;
+      });
+
+      function updateTelemetryDisplay() {
+        const baseFreq = state.prowlActive ? (state.snapMode ? 4.2 : 2.4) : 0.4;
+        const freq = baseFreq * state.tempo;
+        const torque = Math.round((state.snapMode ? 520 : 340) * state.tempo);
+        const bite = state.snapMode ? '22.8 kN' : '16.4 kN';
+        document.getElementById('metric-freq').textContent = `${freq.toFixed(1)} Hz`;
+        document.getElementById('metric-torque').textContent = `${torque} N·m`;
+        document.getElementById('metric-bite').textContent = bite;
+      }
+
+      const camPresets = {
+        'cam-iso': { theta: 0.78, phi: 1.15, radius: 16.5 },
+        'cam-plan': { theta: 0.0, phi: 0.08, radius: 18.5 },
+        'cam-front': { theta: 0.0, phi: 1.44, radius: 13.8 },
+        'cam-profile': { theta: Math.PI / 2, phi: 1.46, radius: 16.5 }
+      };
+
+      Object.keys(camPresets).forEach((btnId) => {
+        document.getElementById(btnId).addEventListener('click', () => {
+          Object.keys(camPresets).forEach((id) => document.getElementById(id).classList.remove('active'));
+          document.getElementById(btnId).classList.add('active');
+          const p = camPresets[btnId];
+          camTargetSpherical.theta = p.theta;
+          camTargetSpherical.phi = p.phi;
+          camTargetSpherical.radius = p.radius;
+          camTargetSpherical.target.set(0, 0.0, -0.2);
+        });
+      });
+
+      const btnOrbit = document.getElementById('btn-orbit');
+      btnOrbit.addEventListener('click', () => {
+        state.autoOrbit = !state.autoOrbit;
+        btnOrbit.classList.toggle('active', state.autoOrbit);
+      });
+
+      const btnQuadView = document.getElementById('btn-quad-view');
+      const quadOverlay = document.getElementById('quad-overlay');
+      btnQuadView.addEventListener('click', () => {
+        state.quadView = !state.quadView;
+        btnQuadView.classList.toggle('active', state.quadView);
+        quadOverlay.classList.toggle('hidden', !state.quadView);
+        annotationsLayer.classList.toggle('hidden', state.quadView || !state.showAnnotations);
+      });
+
+      const btnAnnotations = document.getElementById('btn-annotations');
+      btnAnnotations.addEventListener('click', () => {
+        state.showAnnotations = !state.showAnnotations;
+        btnAnnotations.classList.toggle('active', state.showAnnotations);
+        btnAnnotations.querySelector('span:last-child').textContent = state.showAnnotations ? 'CALLOUTS: ON' : 'CALLOUTS: OFF';
+        annotationsLayer.classList.toggle('hidden', state.quadView || !state.showAnnotations);
+      });
+
+      const btnSound = document.getElementById('btn-sound');
+      const soundIndicator = document.getElementById('sound-indicator');
+      const soundLabel = document.getElementById('sound-label');
+      btnSound.addEventListener('click', () => {
+        initAudioIfNeeded();
+        state.soundEnabled = !state.soundEnabled;
+        btnSound.classList.toggle('active', state.soundEnabled);
+        soundLabel.textContent = state.soundEnabled ? 'AUDIO: ON' : 'AUDIO: OFF';
+        soundIndicator.style.background = state.soundEnabled ? 'var(--accent-gold)' : '#64748b';
+      });
+
+      const themes = {
+        'theme-azure': {
+          name: 'azure',
+          bodyClass: '',
+          bluedColor: 0x1d3b5c,
+          crystalColor: 0x38bdf8,
+          brassColor: 0xd9a74a
+        },
+        'theme-obsidian': {
+          name: 'obsidian',
+          bodyClass: 'theme-obsidian',
+          bluedColor: 0x1c1917,
+          crystalColor: 0xf43f5e,
+          brassColor: 0xe5a96d
+        },
+        'theme-parchment': {
+          name: 'parchment',
+          bodyClass: 'theme-parchment',
+          bluedColor: 0x3e3124,
+          crystalColor: 0x1d6fa5,
+          brassColor: 0x9c652b
+        }
+      };
+
+      function applyThemeById(tId) {
+        Object.keys(themes).forEach((id) => document.getElementById(id).classList.remove('active'));
+        document.getElementById(tId).classList.add('active');
+        const cfg = themes[tId];
+        state.theme = cfg.name;
+        document.body.className = `blueprint-grid ${cfg.bodyClass}`.trim();
+        materials.bluedSteel.color.setHex(cfg.bluedColor);
+        materials.crystalLens.color.setHex(cfg.crystalColor);
+        materials.brassPolished.color.setHex(cfg.brassColor);
+        coreGlowLight.color.setHex(cfg.crystalColor);
+        scene.environment = buildStudioEnvMap(cfg.name);
+      }
+
+      Object.keys(themes).forEach((tId) => {
+        document.getElementById(tId).addEventListener('click', () => applyThemeById(tId));
+      });
+
+      // ==========================================
+      // 10B. AUTO DEMO SHOWREEL & VIDEO RECORDER
+      // ==========================================
+      const btnAutoDemo = document.getElementById('btn-auto-demo');
+      const demoBtnLabel = document.getElementById('demo-btn-label');
+      const demoBanner = document.getElementById('demo-banner');
+      const demoActLabel = document.getElementById('demo-act-label');
+      const demoTimeLabel = document.getElementById('demo-time-label');
+      const demoProgressBar = document.getElementById('demo-progress-bar');
+
+      const btnRecVideo = document.getElementById('btn-rec-video');
+      const recBtnLabel = document.getElementById('rec-btn-label');
+      const recToast = document.getElementById('rec-toast');
+      const recToastText = document.getElementById('rec-toast-text');
+
+      function startAutoDemo() {
+        state.demoActive = true;
+        state.demoElapsed = 0;
+        state.manualJawDeg = null;
+        btnAutoDemo.classList.add('active');
+        demoBtnLabel.textContent = 'STOP DEMO';
+        demoBanner.classList.remove('hidden');
+        state.prowlActive = true;
+        btnProwl.classList.add('active');
+        prowlBtnText.textContent = 'SWIM / PROWL';
+        prowlDot.classList.add('animate-ping');
+        selectSubsystem('all');
+      }
+
+      function stopAutoDemo() {
+        state.demoActive = false;
+        btnAutoDemo.classList.remove('active');
+        demoBtnLabel.textContent = 'AUTO DEMO';
+        demoBanner.classList.add('hidden');
+        state.quadView = false;
+        btnQuadView.classList.remove('active');
+        quadOverlay.classList.add('hidden');
+        annotationsLayer.classList.toggle('hidden', !state.showAnnotations);
+      }
+
+      btnAutoDemo.addEventListener('click', () => {
+        if (state.demoActive) stopAutoDemo();
+        else startAutoDemo();
+      });
+
+      function updateDirectorDemo(dt) {
+        if (!state.demoActive) return;
+        state.demoElapsed += dt;
+        if (state.demoElapsed >= state.demoDuration) {
+          if (state.isRecording) {
+            stopVideoRecording();
+            stopAutoDemo();
+            return;
+          }
+          state.demoElapsed = 0;
+        }
+
+        const t = state.demoElapsed;
+        const pct = Math.min(100, (t / state.demoDuration) * 100);
+        demoProgressBar.style.width = `${pct.toFixed(1)}%`;
+        demoTimeLabel.textContent = `${t.toFixed(1)}s / ${state.demoDuration.toFixed(1)}s`;
+
+        // 24s Choreographed Tour: Sequentially clicks & inspects Parts 01 -> 06!
+        if (t < 2.2) {
+          // Intro: Full Automaton Prowl
+          demoActLabel.textContent = 'INTRO // SYS-00 FULL AUTOMATON PROWL';
+          if (state.selectedPart !== 'all') selectSubsystem('all');
+          setExplodeTarget(0);
+          state.snapMode = false;
+          btnSnapMode.classList.remove('active');
+          state.quadView = false;
+          btnQuadView.classList.remove('active');
+          quadOverlay.classList.add('hidden');
+          annotationsLayer.classList.toggle('hidden', !state.showAnnotations);
+          camTargetSpherical.theta = 0.72 + t * 0.18;
+          camTargetSpherical.phi = 1.12;
+          camTargetSpherical.radius = 15.8;
+        } else if (t < 5.2) {
+          // PART 01: Skull & Slit Optics
+          demoActLabel.textContent = 'CLICK 01 // SYS-01 CRANIUM & SLIT OPTICS';
+          if (state.selectedPart !== 'skull') selectSubsystem('skull');
+          setExplodeTarget(15);
+          state.snapMode = false;
+          btnSnapMode.classList.remove('active');
+          camTargetSpherical.theta = 0.52 + (t - 2.2) * 0.15;
+          camTargetSpherical.phi = 1.14;
+          camTargetSpherical.radius = 8.8;
+        } else if (t < 8.4) {
+          // PART 02: Hydraulic Mandible + Apex Snap
+          demoActLabel.textContent = 'CLICK 02 // SYS-02 22.8kN HYDRAULIC JAW';
+          if (state.selectedPart !== 'jaw') selectSubsystem('jaw');
+          setExplodeTarget(25);
+          if (!state.snapMode) {
+            state.snapMode = true;
+            btnSnapMode.classList.add('active');
+            updateTelemetryDisplay();
+          }
+          camTargetSpherical.theta = 0.68 + (t - 5.2) * 0.16;
+          camTargetSpherical.phi = 1.30;
+          camTargetSpherical.radius = 8.4;
+        } else if (t < 11.6) {
+          // PART 03: Dorsal Osteoderm Scutes & Internal Gearbox (Exploded!)
+          demoActLabel.textContent = 'CLICK 03 // SYS-03 OSTEODERM & TORQUE GEARBOX';
+          if (state.selectedPart !== 'carapace') selectSubsystem('carapace');
+          const expVal = Math.min(85, Math.round(25 + ((t - 8.4) / 1.8) * 60));
+          setExplodeTarget(expVal);
+          state.snapMode = false;
+          btnSnapMode.classList.remove('active');
+          updateTelemetryDisplay();
+          camTargetSpherical.theta = 0.85 + (t - 8.4) * 0.20;
+          camTargetSpherical.phi = 0.94;
+          camTargetSpherical.radius = 10.4;
+        } else if (t < 14.8) {
+          // PART 04: 8-Segment Sculling Tail
+          demoActLabel.textContent = 'CLICK 04 // SYS-04 8-SEG SCULLING TAIL';
+          if (state.selectedPart !== 'tail') selectSubsystem('tail');
+          setExplodeTarget(65);
+          camTargetSpherical.theta = 2.05 + (t - 11.6) * 0.18;
+          camTargetSpherical.phi = 1.10;
+          camTargetSpherical.radius = 11.2;
+        } else if (t < 17.8) {
+          // PART 05: Cam-Driven Quadruped Limbs
+          demoActLabel.textContent = 'CLICK 05 // SYS-05 CAM-DRIVEN QUADRUPED LIMBS';
+          if (state.selectedPart !== 'limbs') selectSubsystem('limbs');
+          setExplodeTarget(75);
+          camTargetSpherical.theta = 1.12 + (t - 14.8) * 0.18;
+          camTargetSpherical.phi = 1.34;
+          camTargetSpherical.radius = 9.8;
+        } else if (t < 20.8) {
+          // PART 06: Ventral Gastralia Chassis (100% Exploded)
+          demoActLabel.textContent = 'CLICK 06 // SYS-06 VENTRAL GASTRALIA CHASSIS';
+          if (state.selectedPart !== 'belly') selectSubsystem('belly');
+          setExplodeTarget(100);
+          camTargetSpherical.theta = 0.92 + (t - 17.8) * 0.18;
+          camTargetSpherical.phi = 1.48;
+          camTargetSpherical.radius = 10.2;
+        } else {
+          // FINALE: Reassemble + 4-View CAD Blueprint & Hero Finish
+          demoActLabel.textContent = 'FINALE // REASSEMBLY & 4-VIEW CAD BLUEPRINT';
+          if (state.selectedPart !== 'all') selectSubsystem('all');
+          const reassemble = Math.max(0, 1 - (t - 20.8) / 1.5);
+          setExplodeTarget(Math.round(reassemble * 100));
+          const showQuad = (t >= 21.0 && t < 22.8);
+          if (state.quadView !== showQuad) {
+            state.quadView = showQuad;
+            btnQuadView.classList.toggle('active', showQuad);
+            quadOverlay.classList.toggle('hidden', !showQuad);
+            annotationsLayer.classList.toggle('hidden', showQuad || !state.showAnnotations);
+          }
+          camTargetSpherical.theta = 0.78 + (t - 20.8) * 0.22;
+          camTargetSpherical.phi = 1.15;
+          camTargetSpherical.radius = 16.2;
+        }
+      }
+
+      const recCanvas = document.createElement('canvas');
+      const recCtx = recCanvas.getContext('2d');
+      let mediaRecorder = null;
+      let recordedChunks = [];
+
+      // Helper to wrap CJK/mixed text inside a canvas box
+      function fillWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
+        const chars = Array.from(text);
+        let line = '';
+        let curY = y;
+        for (let i = 0; i < chars.length; i++) {
+          const testLine = line + chars[i];
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width > maxWidth && line.length > 0) {
+            ctx.fillText(line, x, curY);
+            line = chars[i];
+            curY += lineHeight;
+          } else {
+            line = testLine;
+          }
+        }
+        if (line.length > 0) {
+          ctx.fillText(line, x, curY);
+          curY += lineHeight;
+        }
+        return curY;
+      }
+
+      function drawCompositeFrame() {
+        if (!state.isRecording) return;
+        const w = renderer.domElement.width;
+        const h = renderer.domElement.height;
+        if (recCanvas.width !== w || recCanvas.height !== h) {
+          recCanvas.width = w;
+          recCanvas.height = h;
+        }
+        // 1. Draw WebGL 3D Scene
+        recCtx.drawImage(renderer.domElement, 0, 0, w, h);
+
+        const scale = Math.min(w / 1280, h / 720);
+        const pad = Math.round(20 * scale);
+        const panelBg = state.theme === 'parchment' ? 'rgba(242, 233, 216, 0.88)' : 'rgba(10, 20, 38, 0.84)';
+        const textMain = state.theme === 'parchment' ? '#292018' : '#f1f5f9';
+        const textMuted = state.theme === 'parchment' ? '#6e5a44' : '#94a3b8';
+
+        recCtx.save();
+
+        // 2. Draw 3D Callout Pins (01 - 06) onto the recorded video frame!
+        if (!state.quadView && state.showAnnotations) {
+          const vProj = new THREE.Vector3();
+          calloutDefs.forEach((def) => {
+            def.anchorObj.getWorldPosition(vProj);
+            vProj.add(def.offset);
+            vProj.project(mainCamera);
+            if (vProj.z <= 1) {
+              const sx = (vProj.x * 0.5 + 0.5) * w;
+              const sy = (-vProj.y * 0.5 + 0.5) * h;
+              const isSelected = (state.selectedPart === def.key);
+
+              // Pulsing dot & ring
+              recCtx.beginPath();
+              recCtx.arc(sx, sy, (isSelected ? 7 : 5) * scale, 0, Math.PI * 2);
+              recCtx.fillStyle = isSelected ? '#38bdf8' : '#d4af37';
+              recCtx.fill();
+
+              recCtx.beginPath();
+              recCtx.arc(sx, sy, (isSelected ? 14 : 9) * scale, 0, Math.PI * 2);
+              recCtx.strokeStyle = isSelected ? '#38bdf8' : 'rgba(212, 175, 55, 0.7)';
+              recCtx.lineWidth = isSelected ? 2 : 1;
+              recCtx.stroke();
+
+              // Pin label tag
+              recCtx.font = `600 ${Math.round(10 * scale)}px "JetBrains Mono", monospace`;
+              const labelStr = `${def.num} ${def.label}`;
+              const tw = recCtx.measureText(labelStr).width + Math.round(16 * scale);
+              const th = Math.round(20 * scale);
+              const bx = sx + Math.round(12 * scale);
+              const by = sy - Math.round(10 * scale);
+
+              recCtx.fillStyle = isSelected ? 'rgba(212, 175, 55, 0.28)' : panelBg;
+              recCtx.strokeStyle = isSelected ? '#d4af37' : 'rgba(212, 175, 55, 0.35)';
+              recCtx.lineWidth = isSelected ? 1.8 : 1;
+              recCtx.fillRect(bx, by, tw, th);
+              recCtx.strokeRect(bx, by, tw, th);
+
+              recCtx.fillStyle = '#d4af37';
+              recCtx.fillText(def.num, bx + Math.round(6 * scale), by + Math.round(14 * scale));
+              recCtx.fillStyle = textMain;
+              recCtx.fillText(def.label, bx + Math.round(24 * scale), by + Math.round(14 * scale));
+            }
+          });
+        }
+
+        // 3. Top-Left Title Box
+        const boxW = Math.round(395 * scale);
+        const boxH = Math.round(82 * scale);
+        recCtx.fillStyle = panelBg;
+        recCtx.strokeStyle = '#d4af37';
+        recCtx.lineWidth = 1.5;
+        recCtx.fillRect(pad, pad, boxW, boxH);
+        recCtx.strokeRect(pad, pad, boxW, boxH);
+
+        recCtx.fillStyle = '#d4af37';
+        recCtx.font = `600 ${Math.round(10 * scale)}px "JetBrains Mono", monospace`;
+        recCtx.fillText('FIG. 12 — AUTOMATON LORICATA | SCALE 1:10', pad + Math.round(12 * scale), pad + Math.round(20 * scale));
+
+        recCtx.fillStyle = textMain;
+        recCtx.font = `italic 600 ${Math.round(24 * scale)}px "Cormorant Garamond", Georgia, serif`;
+        recCtx.fillText('Crocodylus Mechanica', pad + Math.round(12 * scale), pad + Math.round(48 * scale));
+
+        recCtx.fillStyle = textMuted;
+        recCtx.font = `400 ${Math.round(9.5 * scale)}px "JetBrains Mono", monospace`;
+        recCtx.fillText('CONCEPT NO. 12: HYDRAULIC-JAW HOROLOGICAL REPTILE', pad + Math.round(12 * scale), pad + Math.round(68 * scale));
+
+        // 4. Top-Center Director Progress Banner
+        if (state.demoActive) {
+          const banW = Math.round(360 * scale);
+          const banH = Math.round(42 * scale);
+          const banX = Math.round((w - banW) * 0.5);
+          const banY = pad;
+          recCtx.fillStyle = panelBg;
+          recCtx.strokeStyle = '#d4af37';
+          recCtx.fillRect(banX, banY, banW, banH);
+          recCtx.strokeRect(banX, banY, banW, banH);
+
+          recCtx.fillStyle = '#d4af37';
+          recCtx.font = `600 ${Math.round(9.5 * scale)}px "JetBrains Mono", monospace`;
+          recCtx.fillText(demoActLabel.textContent, banX + Math.round(10 * scale), banY + Math.round(17 * scale));
+
+          const progRatio = Math.min(1, state.demoElapsed / state.demoDuration);
+          const barW = banW - Math.round(20 * scale);
+          recCtx.fillStyle = 'rgba(148, 163, 184, 0.25)';
+          recCtx.fillRect(banX + Math.round(10 * scale), banY + Math.round(27 * scale), barW, Math.round(5 * scale));
+          recCtx.fillStyle = '#d4af37';
+          recCtx.fillRect(banX + Math.round(10 * scale), banY + Math.round(27 * scale), Math.round(barW * progRatio), Math.round(5 * scale));
+        }
+
+        // 5. Left Telemetry Spec Panel
+        const teleY = pad + boxH + Math.round(14 * scale);
+        const leftW = Math.round(256 * scale);
+        const teleH = Math.round(158 * scale);
+        recCtx.fillStyle = panelBg;
+        recCtx.strokeStyle = 'rgba(212, 175, 55, 0.45)';
+        recCtx.lineWidth = 1.2;
+        recCtx.fillRect(pad, teleY, leftW, teleH);
+        recCtx.strokeRect(pad, teleY, leftW, teleH);
+
+        recCtx.fillStyle = '#d4af37';
+        recCtx.font = `600 ${Math.round(10 * scale)}px "JetBrains Mono", monospace`;
+        recCtx.fillText('TELEMETRY SPEC', pad + Math.round(12 * scale), teleY + Math.round(20 * scale));
+        recCtx.fillStyle = '#38bdf8';
+        recCtx.fillText(document.getElementById('status-badge').textContent, pad + Math.round(135 * scale), teleY + Math.round(20 * scale));
+
+        const metrics = [
+          ['LENGTH (全长)', '4.20 m', 'MASS (质量)', '485 kg'],
+          ['BITE (咬合力)', document.getElementById('metric-bite').textContent, 'JAW GAPE (张角)', document.getElementById('metric-gape').textContent],
+          ['TAIL FREQ (尾频)', document.getElementById('metric-freq').textContent, 'TORQUE (扭矩)', document.getElementById('metric-torque').textContent]
+        ];
+        metrics.forEach((row, rIdx) => {
+          const ry = teleY + Math.round((44 + rIdx * 38) * scale);
+          recCtx.fillStyle = textMuted;
+          recCtx.font = `400 ${Math.round(8.5 * scale)}px "Inter", sans-serif`;
+          recCtx.fillText(row[0], pad + Math.round(12 * scale), ry);
+          recCtx.fillText(row[2], pad + Math.round(135 * scale), ry);
+
+          recCtx.fillStyle = textMain;
+          recCtx.font = `600 ${Math.round(12 * scale)}px "JetBrains Mono", monospace`;
+          recCtx.fillText(row[1], pad + Math.round(12 * scale), ry + Math.round(15 * scale));
+          recCtx.fillText(row[3], pad + Math.round(135 * scale), ry + Math.round(15 * scale));
+        });
+
+        // 6. Bottom-Left Subsystem Inspector Introduction Card (#inspector-card)!
+        const inspY = teleY + teleH + Math.round(12 * scale);
+        const inspH = Math.round(182 * scale);
+        const isPartFocused = state.selectedPart && state.selectedPart !== 'all';
+        recCtx.fillStyle = panelBg;
+        recCtx.strokeStyle = isPartFocused ? '#d4af37' : 'rgba(212, 175, 55, 0.45)';
+        recCtx.lineWidth = isPartFocused ? 2.0 : 1.2;
+        recCtx.fillRect(pad, inspY, leftW, inspH);
+        recCtx.strokeRect(pad, inspY, leftW, inspH);
+
+        const pCode = document.getElementById('part-code').textContent;
+        const pTitle = document.getElementById('part-title').textContent;
+        const pDesc = document.getElementById('part-desc').textContent;
+        const pMat = document.getElementById('part-material').textContent;
+
+        recCtx.fillStyle = '#38bdf8';
+        recCtx.font = `600 ${Math.round(9.5 * scale)}px "JetBrains Mono", monospace`;
+        recCtx.fillText(pCode, pad + Math.round(12 * scale), inspY + Math.round(20 * scale));
+
+        recCtx.fillStyle = textMain;
+        recCtx.font = `600 ${Math.round(15 * scale)}px "Inter", "Microsoft YaHei", sans-serif`;
+        recCtx.fillText(pTitle, pad + Math.round(12 * scale), inspY + Math.round(44 * scale));
+
+        recCtx.fillStyle = textMuted;
+        recCtx.font = `400 ${Math.round(10.5 * scale)}px "Inter", "Microsoft YaHei", sans-serif`;
+        fillWrappedText(
+          recCtx,
+          pDesc,
+          pad + Math.round(12 * scale),
+          inspY + Math.round(66 * scale),
+          leftW - Math.round(24 * scale),
+          Math.round(16 * scale)
+        );
+
+        recCtx.fillStyle = '#d4af37';
+        recCtx.font = `500 ${Math.round(9.5 * scale)}px "JetBrains Mono", monospace`;
+        recCtx.fillText(`ALLOY: ${pMat}`, pad + Math.round(12 * scale), inspY + inspH - Math.round(12 * scale));
+
+        // 7. Bottom Status & Exploded Bar
+        const botY = h - pad - Math.round(38 * scale);
+        const stripW = Math.round(560 * scale);
+        const stripH = Math.round(38 * scale);
+        recCtx.fillStyle = panelBg;
+        recCtx.strokeStyle = '#d4af37';
+        recCtx.lineWidth = 1.2;
+        recCtx.fillRect(pad, botY, stripW, stripH);
+        recCtx.strokeRect(pad, botY, stripW, stripH);
+
+        recCtx.fillStyle = '#d4af37';
+        recCtx.font = `500 ${Math.round(10.5 * scale)}px "JetBrains Mono", monospace`;
+        const expText = `EXPLODED: ${Math.round(state.explodeFactor * 100)}%`;
+        const gapeText = `JAW GAPE: ${Math.round(state.currentJawDeg)}°`;
+        const biteText = `BITE: ${document.getElementById('metric-bite').textContent}`;
+        const viewText = state.quadView ? 'MODE: 4-VIEW CAD' : 'MODE: 3D PERSPECTIVE';
+        recCtx.fillText(`${expText}   |   ${gapeText}   |   ${biteText}   |   ${viewText}`, pad + Math.round(14 * scale), botY + Math.round(23 * scale));
+
+        if (state.quadView) {
+          recCtx.strokeStyle = 'rgba(212, 175, 55, 0.45)';
+          recCtx.beginPath();
+          recCtx.moveTo(w / 2, 0);
+          recCtx.lineTo(w / 2, h);
+          recCtx.moveTo(0, h / 2);
+          recCtx.lineTo(w, h / 2);
+          recCtx.stroke();
+        }
+        recCtx.restore();
+      }
+
+      function startVideoRecording() {
+        if (state.isRecording) return;
+        try {
+          const w = renderer.domElement.width;
+          const h = renderer.domElement.height;
+          recCanvas.width = w;
+          recCanvas.height = h;
+
+          const stream = recCanvas.captureStream(60);
+          const mimeTypes = [
+            'video/webm;codecs=vp9',
+            'video/webm;codecs=vp8',
+            'video/webm',
+            'video/mp4'
+          ];
+          let selectedMime = '';
+          for (const m of mimeTypes) {
+            if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) {
+              selectedMime = m;
+              break;
+            }
+          }
+
+          recordedChunks = [];
+          mediaRecorder = selectedMime
+            ? new MediaRecorder(stream, { mimeType: selectedMime, videoBitsPerSecond: 8000000 })
+            : new MediaRecorder(stream);
+
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: selectedMime || 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const ext = (selectedMime && selectedMime.includes('mp4')) ? 'mp4' : 'webm';
+            a.href = url;
+            a.download = `crocodylus_mechanica_demo.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+            recToastText.textContent = 'VIDEO EXPORTED: crocodylus_mechanica_demo.' + ext;
+            setTimeout(() => recToast.classList.add('hidden'), 3500);
+          };
+
+          state.isRecording = true;
+          mediaRecorder.start(100);
+          btnRecVideo.classList.add('active');
+          recBtnLabel.textContent = 'STOP & SAVE';
+          recToast.classList.remove('hidden');
+          recToastText.textContent = 'RECORDING DEMO SHOWREEL (CLICK STOP TO SAVE EARLY)...';
+
+          if (!state.demoActive) startAutoDemo();
+        } catch (err) {
+          recToast.classList.remove('hidden');
+          recToastText.textContent = 'BROWSER RECORDING UNAVAILABLE IN THIS CONTEXT';
+          setTimeout(() => recToast.classList.add('hidden'), 3000);
+        }
+      }
+
+      function stopVideoRecording() {
+        if (!state.isRecording) return;
+        state.isRecording = false;
+        btnRecVideo.classList.remove('active');
+        recBtnLabel.textContent = 'REC VIDEO';
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+      }
+
+      btnRecVideo.addEventListener('click', () => {
+        if (state.isRecording) stopVideoRecording();
+        else startVideoRecording();
+      });
+
+      // ==========================================
+      // 10C. 4:3 & 3:4 HIGH-RES COVER GENERATOR & AUTO-DOWNLOADER
+      // ==========================================
+      const coverCanvas = document.createElement('canvas');
+      const coverCtx = coverCanvas.getContext('2d');
+      const btnCover4x3 = document.getElementById('btn-cover-4x3');
+      const btnCover3x4 = document.getElementById('btn-cover-3x4');
+      const coverModal = document.getElementById('cover-modal');
+      const btnCloseCoverModal = document.getElementById('btn-close-cover-modal');
+      const coverStatusMsg = document.getElementById('cover-status-msg');
+      const previewImg4x3 = document.getElementById('preview-img-4x3');
+      const previewImg3x4 = document.getElementById('preview-img-3x4');
+      const placeholder4x3 = document.getElementById('placeholder-4x3');
+      const placeholder3x4 = document.getElementById('placeholder-3x4');
+      const dlLink4x3 = document.getElementById('dl-link-4x3');
+      const dlLink3x4 = document.getElementById('dl-link-3x4');
+
+      btnCloseCoverModal.addEventListener('click', () => {
+        coverModal.classList.add('hidden');
+      });
+
+      function renderCoverToDataURL(ratioType) {
+        const is4x3 = (ratioType === '4x3');
+        const cw = is4x3 ? 1600 : 1200;
+        const ch = is4x3 ? 1200 : 1600;
+        coverCanvas.width = cw;
+        coverCanvas.height = ch;
+
+        // Save current state & camera
+        const prevW = window.innerWidth;
+        const prevH = window.innerHeight;
+        const prevExplode = state.explodeFactor;
+        const prevJaw = state.currentJawDeg;
+        const prevSelected = state.selectedPart;
+        const prevCamPos = mainCamera.position.clone();
+        const prevCamAspect = mainCamera.aspect;
+
+        // Set dramatic hero pose for cover: 55% exploded dorsal armor + 44 deg open hydraulic jaw
+        const coverExplode = 0.55;
+        Object.keys(subsystems).forEach((key, idx) => {
+          const grp = subsystems[key];
+          const base = grp.userData.basePos;
+          const exp = grp.userData.explodeVec;
+          grp.position.set(
+            base.x + exp.x * coverExplode,
+            base.y + exp.y * coverExplode,
+            base.z + exp.z * coverExplode
+          );
+        });
+        tailSegments.forEach((seg) => {
+          seg.position.z = seg.userData.baseZ * (1 + coverExplode * 0.52);
+        });
+        materials.leaderDash.opacity = 0.72;
+
+        const heroJawRad = THREE.MathUtils.degToRad(44);
+        jawPivotGroup.rotation.x = heroJawRad;
+        skullGroup.rotation.x = -heroJawRad * 0.22;
+
+        // Position camera specifically for 4:3 landscape or 3:4 portrait framing
+        renderer.setPixelRatio(1);
+        renderer.setSize(cw, ch, false);
+        mainCamera.aspect = cw / ch;
+        mainCamera.updateProjectionMatrix();
+
+        const targetFocus = is4x3 ? new THREE.Vector3(0.0, 0.15, 0.25) : new THREE.Vector3(0.0, 0.05, 0.95);
+        if (is4x3) {
+          // 4:3 Horizontal: sweeping 3/4 isometric full-body + open jaw
+          mainCamera.position.set(10.2, 5.4, 9.6);
+        } else {
+          // 3:4 Vertical: punchy closer 3/4 view filling vertical frame
+          mainCamera.position.set(9.8, 5.8, 10.8);
+        }
+        mainCamera.lookAt(targetFocus);
+        renderer.setScissorTest(false);
+        renderer.setViewport(0, 0, cw, ch);
+
+        // Background fill matching blueprint grid
+        coverCtx.fillStyle = state.theme === 'parchment' ? '#efe6d5' : (state.theme === 'obsidian' ? '#09090c' : '#07101e');
+        coverCtx.fillRect(0, 0, cw, ch);
+
+        // Draw subtle blueprint grid lines on cover background
+        coverCtx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+        coverCtx.lineWidth = 1;
+        const gridStep = 48;
+        for (let gx = 0; gx < cw; gx += gridStep) {
+          coverCtx.beginPath();
+          coverCtx.moveTo(gx, 0);
+          coverCtx.lineTo(gx, ch);
+          coverCtx.stroke();
+        }
+        for (let gy = 0; gy < ch; gy += gridStep) {
+          coverCtx.beginPath();
+          coverCtx.moveTo(0, gy);
+          coverCtx.lineTo(cw, gy);
+          coverCtx.stroke();
+        }
+
+        // Render 3D WebGL scene and composite onto coverCanvas
+        renderer.render(scene, mainCamera);
+        coverCtx.drawImage(renderer.domElement, 0, 0, cw, ch);
+
+        // Draw HUD Callout Pins (01 - 06) projected in cover camera space
+        const scale = is4x3 ? 1.25 : 1.18;
+        const pad = Math.round(32 * scale);
+        const panelBg = 'rgba(10, 20, 38, 0.86)';
+        const textMain = '#f1f5f9';
+        const textMuted = '#94a3b8';
+
+        const vProj = new THREE.Vector3();
+        calloutDefs.forEach((def) => {
+          def.anchorObj.getWorldPosition(vProj);
+          vProj.add(def.offset);
+          vProj.project(mainCamera);
+          if (vProj.z <= 1) {
+            const sx = (vProj.x * 0.5 + 0.5) * cw;
+            const sy = (-vProj.y * 0.5 + 0.5) * ch;
+            const isHi = (def.key === 'jaw' || def.key === 'carapace');
+
+            coverCtx.beginPath();
+            coverCtx.arc(sx, sy, (isHi ? 8 : 6) * scale, 0, Math.PI * 2);
+            coverCtx.fillStyle = isHi ? '#38bdf8' : '#d4af37';
+            coverCtx.fill();
+
+            coverCtx.beginPath();
+            coverCtx.arc(sx, sy, (isHi ? 16 : 11) * scale, 0, Math.PI * 2);
+            coverCtx.strokeStyle = isHi ? '#38bdf8' : 'rgba(212, 175, 55, 0.8)';
+            coverCtx.lineWidth = 2;
+            coverCtx.stroke();
+
+            coverCtx.font = `600 ${Math.round(12 * scale)}px "JetBrains Mono", monospace`;
+            const labelStr = `${def.num} ${def.label}`;
+            const tw = coverCtx.measureText(labelStr).width + Math.round(20 * scale);
+            const th = Math.round(26 * scale);
+            const bx = Math.min(cw - tw - 16, Math.max(16, sx + Math.round(14 * scale)));
+            const by = Math.min(ch - th - 16, Math.max(16, sy - Math.round(13 * scale)));
+
+            coverCtx.fillStyle = isHi ? 'rgba(212, 175, 55, 0.28)' : panelBg;
+            coverCtx.strokeStyle = '#d4af37';
+            coverCtx.lineWidth = isHi ? 2 : 1.2;
+            coverCtx.fillRect(bx, by, tw, th);
+            coverCtx.strokeRect(bx, by, tw, th);
+
+            coverCtx.fillStyle = '#d4af37';
+            coverCtx.fillText(def.num, bx + Math.round(8 * scale), by + Math.round(18 * scale));
+            coverCtx.fillStyle = textMain;
+            coverCtx.fillText(def.label, bx + Math.round(30 * scale), by + Math.round(18 * scale));
+          }
+        });
+
+        // Outer Engineering Blueprint Frame Border
+        coverCtx.strokeStyle = 'rgba(212, 175, 55, 0.55)';
+        coverCtx.lineWidth = 2;
+        coverCtx.strokeRect(18, 18, cw - 36, ch - 36);
+
+        // Top Header Banner
+        const topW = is4x3 ? Math.round(560 * scale) : (cw - pad * 2);
+        const topH = Math.round(108 * scale);
+        coverCtx.fillStyle = panelBg;
+        coverCtx.strokeStyle = '#d4af37';
+        coverCtx.lineWidth = 2;
+        coverCtx.fillRect(pad, pad, topW, topH);
+        coverCtx.strokeRect(pad, pad, topW, topH);
+
+        coverCtx.fillStyle = '#d4af37';
+        coverCtx.font = `600 ${Math.round(13 * scale)}px "JetBrains Mono", monospace`;
+        coverCtx.fillText('FIG. 12 — AUTOMATON LORICATA | SCALE 1:10 | THREE.JS WEBGL', pad + Math.round(18 * scale), pad + Math.round(28 * scale));
+
+        coverCtx.fillStyle = textMain;
+        coverCtx.font = `italic 600 ${Math.round(32 * scale)}px "Cormorant Garamond", "Microsoft YaHei", serif`;
+        coverCtx.fillText('Crocodylus Mechanica · 3D 机械鳄鱼', pad + Math.round(18 * scale), pad + Math.round(66 * scale));
+
+        coverCtx.fillStyle = '#38bdf8';
+        coverCtx.font = `600 ${Math.round(13 * scale)}px "JetBrains Mono", "Microsoft YaHei", sans-serif`;
+        coverCtx.fillText('SWISS TOURBILLON GEARBOX & 22.8kN HYDRAULIC JAW AUTOMATON', pad + Math.round(18 * scale), pad + Math.round(92 * scale));
+
+        // Bottom-Left Subsystem Introduction Card + Telemetry Bar
+        const cardW = is4x3 ? Math.round(420 * scale) : (cw - pad * 2);
+        const cardH = Math.round(150 * scale);
+        const cardX = pad;
+        const cardY = ch - pad - cardH;
+
+        coverCtx.fillStyle = panelBg;
+        coverCtx.strokeStyle = '#d4af37';
+        coverCtx.lineWidth = 2;
+        coverCtx.fillRect(cardX, cardY, cardW, cardH);
+        coverCtx.strokeRect(cardX, cardY, cardW, cardH);
+
+        coverCtx.fillStyle = '#38bdf8';
+        coverCtx.font = `600 ${Math.round(12 * scale)}px "JetBrains Mono", monospace`;
+        coverCtx.fillText('SYS-02 & SYS-03 // HYDRAULIC JAW & OSTEODERM GEARBOX', cardX + Math.round(16 * scale), cardY + Math.round(26 * scale));
+
+        coverCtx.fillStyle = textMain;
+        coverCtx.font = `600 ${Math.round(19 * scale)}px "Inter", "Microsoft YaHei", sans-serif`;
+        coverCtx.fillText('重装液压发条机械鳄鱼 · 爆炸拆解工程图', cardX + Math.round(16 * scale), cardY + Math.round(56 * scale));
+
+        coverCtx.fillStyle = textMuted;
+        coverCtx.font = `400 ${Math.round(12.5 * scale)}px "Inter", "Microsoft YaHei", sans-serif`;
+        fillWrappedText(
+          coverCtx,
+          '全身 180+ 程序化精密部件：四列金字塔棱鳞背甲、内置双发条盒与红宝石陀飞轮擒纵、36颗精钢獠牙液压咬合颌骨及八节万向推进尾椎。',
+          cardX + Math.round(16 * scale),
+          cardY + Math.round(82 * scale),
+          cardW - Math.round(32 * scale),
+          Math.round(20 * scale)
+        );
+
+        coverCtx.fillStyle = '#d4af37';
+        coverCtx.font = `600 ${Math.round(11.5 * scale)}px "JetBrains Mono", monospace`;
+        coverCtx.fillText('BITE FORCE: 22.8 kN   |   JAW GAPE: 44°   |   EXPLODED: 55%   |   RATIO: ' + (is4x3 ? '4:3' : '3:4'), cardX + Math.round(16 * scale), cardY + cardH - Math.round(14 * scale));
+
+        // Restore original renderer size & state
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(prevW, prevH);
+        mainCamera.aspect = prevCamAspect;
+        mainCamera.position.copy(prevCamPos);
+        mainCamera.updateProjectionMatrix();
+        state.explodeFactor = prevExplode;
+        state.currentJawDeg = prevJaw;
+        state.selectedPart = prevSelected;
+
+        return coverCanvas.toDataURL('image/png');
+      }
+
+      function triggerDataUrlDownload(dataUrl, filename) {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      function generateBothCoversAndDownload(autoTrigger) {
+        coverModal.classList.remove('hidden');
+        const url4x3 = renderCoverToDataURL('4x3');
+        previewImg4x3.src = url4x3;
+        previewImg4x3.classList.remove('hidden');
+        placeholder4x3.classList.add('hidden');
+        dlLink4x3.href = url4x3;
+
+        const url3x4 = renderCoverToDataURL('3x4');
+        previewImg3x4.src = url3x4;
+        previewImg3x4.classList.remove('hidden');
+        placeholder3x4.classList.add('hidden');
+        dlLink3x4.href = url3x4;
+
+        if (autoTrigger) {
+          triggerDataUrlDownload(url4x3, 'crocodile_cover_4x3.png');
+          setTimeout(() => {
+            triggerDataUrlDownload(url3x4, 'crocodile_cover_3x4.png');
+          }, 450);
+          coverStatusMsg.innerHTML = '已为您生成并<strong>直接触发下载</strong> 4:3 横版与 3:4 竖版高清封面！若浏览器拦截自动下载，请点击下方按钮保存：';
+        }
+      }
+
+      btnCover4x3.addEventListener('click', () => {
+        coverModal.classList.remove('hidden');
+        const url4x3 = renderCoverToDataURL('4x3');
+        previewImg4x3.src = url4x3;
+        previewImg4x3.classList.remove('hidden');
+        placeholder4x3.classList.add('hidden');
+        dlLink4x3.href = url4x3;
+        triggerDataUrlDownload(url4x3, 'crocodile_cover_4x3.png');
+        coverStatusMsg.innerHTML = '已导出并下载 <strong>4:3 横版封面 (1600×1200)</strong>！';
+      });
+
+      btnCover3x4.addEventListener('click', () => {
+        coverModal.classList.remove('hidden');
+        const url3x4 = renderCoverToDataURL('3x4');
+        previewImg3x4.src = url3x4;
+        previewImg3x4.classList.remove('hidden');
+        placeholder3x4.classList.add('hidden');
+        dlLink3x4.href = url3x4;
+        triggerDataUrlDownload(url3x4, 'crocodile_cover_3x4.png');
+        coverStatusMsg.innerHTML = '已导出并下载 <strong>3:4 竖版封面 (1200×1600)</strong>！';
+      });
+
+      // Automatically generate and trigger download once scene is ready
+      setTimeout(() => {
+        generateBothCoversAndDownload(true);
+      }, 900);
+
+      // ==========================================
+      // 11. POINTER ORBIT, ZOOM & 3D RAYCASTING
+      // ==========================================
+      let isDragging = false;
+      let dragMoved = false;
+      let prevPointer = { x: 0, y: 0 };
+      const raycaster = new THREE.Raycaster();
+      const pointerNDC = new THREE.Vector2();
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        dragMoved = false;
+        prevPointer.x = e.clientX;
+        prevPointer.y = e.clientY;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+
+        camTargetSpherical.theta -= dx * 0.0065;
+        camTargetSpherical.phi = Math.max(0.08, Math.min(Math.PI - 0.12, camTargetSpherical.phi - dy * 0.0065));
+        prevPointer.x = e.clientX;
+        prevPointer.y = e.clientY;
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (isDragging && !dragMoved && e.target === renderer.domElement) {
+          pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+          pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+          raycaster.setFromCamera(pointerNDC, mainCamera);
+          const hits = raycaster.intersectObjects(interactableMeshes, false);
+          if (hits.length > 0 && hits[0].object.userData.subsystem) {
+            selectSubsystem(hits[0].object.userData.subsystem);
+          }
+        }
+        isDragging = false;
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camTargetSpherical.radius = Math.max(6.0, Math.min(30.0, camTargetSpherical.radius + e.deltaY * 0.01));
+      }, { passive: false });
+
+      window.addEventListener('resize', () => {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        mainCamera.aspect = window.innerWidth / window.innerHeight;
+        mainCamera.updateProjectionMatrix();
+      });
+
+      // ==========================================
+      // 12. REAL-TIME KINEMATICS & RENDER LOOP
+      // ==========================================
+      const clock = new THREE.Clock();
+      const tempVec = new THREE.Vector3();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const dt = Math.min(clock.getDelta(), 0.05);
+
+        updateDirectorDemo(dt);
+
+        // 1. Smoothly interpolate Explode Factor
+        state.explodeFactor += (state.targetExplode - state.explodeFactor) * Math.min(1, dt * 8);
+
+        const subsystemKeys = Object.keys(subsystems);
+        const lPosAttr = leaderLines.geometry.attributes.position;
+
+        subsystemKeys.forEach((key, idx) => {
+          const grp = subsystems[key];
+          const base = grp.userData.basePos;
+          const exp = grp.userData.explodeVec;
+          grp.position.set(
+            base.x + exp.x * state.explodeFactor,
+            base.y + exp.y * state.explodeFactor,
+            base.z + exp.z * state.explodeFactor
+          );
+
+          lPosAttr.setXYZ(idx * 2, base.x, base.y, base.z);
+          lPosAttr.setXYZ(idx * 2 + 1, grp.position.x, grp.position.y, grp.position.z);
+        });
+        lPosAttr.needsUpdate = true;
+        leaderLines.computeLineDistances();
+        materials.leaderDash.opacity = state.explodeFactor * 0.68;
+
+        // Telescope the 8 tail segments apart during Exploded View
+        tailSegments.forEach((seg) => {
+          seg.position.z = seg.userData.baseZ * (1 + state.explodeFactor * 0.58);
+        });
+
+        // 2. Advance Simulation Clock
+        const speedMult = (state.prowlActive ? (state.snapMode ? 8.5 : 4.6) : 0.8) * state.tempo;
+        state.simTime += dt * speedMult;
+        const t = state.simTime;
+
+        const tickInterval = state.snapMode ? Math.PI * 0.5 : Math.PI * 0.75;
+        if (t - lastTickTime >= tickInterval) {
+          lastTickTime = t;
+          playMechanicalClank(state.snapMode);
+        }
+
+        // 3. Hydraulic Jaw Kinematics (Gape & Snap)
+        let jawDeg = 18;
+        if (state.manualJawDeg !== null) {
+          jawDeg = state.manualJawDeg;
+        } else if (state.prowlActive) {
+          if (state.snapMode) {
+            // Aggressive rapid hydraulic snap profile
+            const wave = Math.pow(Math.max(0, Math.sin(t * 1.4)), 0.45);
+            jawDeg = wave * 52;
+          } else {
+            // Menacing slow breathing gape
+            jawDeg = 14 + (Math.sin(t * 0.65) * 0.5 + 0.5) * 24;
+          }
+          sliderJaw.value = Math.round(jawDeg);
+          labelJawSlider.textContent = `AUTO (${Math.round(jawDeg)}°)`;
+          document.getElementById('metric-gape').textContent = `${Math.round(jawDeg)}°`;
+        }
+        state.currentJawDeg = jawDeg;
+
+        const jawRad = THREE.MathUtils.degToRad(jawDeg);
+        jawPivotGroup.rotation.x = jawRad;
+        skullGroup.rotation.x = -jawRad * 0.22; // Upper snout lifts slightly during wide gape
+
+        // 4. Internal Gearbox Rotation
+        animatedGears.forEach((g) => {
+          if (g.oscillate) {
+            g.mesh.rotation[g.axis] = Math.sin(t * 2.4) * 0.95;
+          } else {
+            g.mesh.rotation[g.axis] = t * g.ratio;
+          }
+        });
+
+        // 5. Reptilian S-Curve Spine Undulation & 8-Segment Sculling Tail Wave
+        const bodySwayYaw = state.prowlActive ? Math.sin(t) * 0.065 : 0;
+        const bodyHeaveY = state.prowlActive ? Math.sin(t * 2) * 0.04 : 0;
+        crocRoot.rotation.y = bodySwayYaw;
+        crocRoot.position.y = bodyHeaveY;
+        headMasterGroup.rotation.y = -bodySwayYaw * 1.35 + Math.sin(t - 0.4) * 0.08;
+
+        tailSegments.forEach((seg, i) => {
+          const waveAmp = state.prowlActive ? (state.snapMode ? 0.24 : 0.17) : 0.02;
+          const phase = t - i * 0.52;
+          seg.position.x = Math.sin(phase) * waveAmp * (i * 0.46);
+          seg.rotation.y = Math.cos(phase) * waveAmp * (1 + i * 0.12);
+        });
+
+        // 6. Quadrupedal Diagonal Sprawling Gait (FL + RR in phase, FR + RL counter-phase)
+        limbAssemblies.forEach((limb) => {
+          const phaseOffset = (limb.isFront ? 0 : Math.PI) + (limb.side === 1 ? Math.PI : 0);
+          const stride = state.prowlActive ? Math.sin(t + phaseOffset) : 0;
+          const lift = state.prowlActive ? Math.max(0, Math.cos(t + phaseOffset)) : 0;
+
+          limb.root.rotation.y = stride * 0.34 * limb.side;
+          limb.femur.rotation.z = limb.side * (-1.05 + lift * 0.28);
+          limb.tibia.rotation.x = stride * 0.26;
+        });
+
+        // 7. Rotate Blueprint Floor Protractor & Hydro-Slipstream Particles
+        tickLines.rotation.y += dt * 0.05;
+        const sAttr = streamParticles.geometry.attributes.position;
+        const flowSpeed = state.prowlActive ? (state.snapMode ? 10.0 : 5.5) * state.tempo : 0.4;
+        for (let i = 0; i < streamCount; i++) {
+          let z = sAttr.getZ(i) - dt * flowSpeed;
+          if (z < -9) z = 9;
+          sAttr.setZ(i, z);
+        }
+        sAttr.needsUpdate = true;
+
+        // 8. Camera Spherical Orbit & Smooth Damping
+        if (state.autoOrbit && !isDragging) {
+          camTargetSpherical.theta += dt * 0.30;
+        }
+        camSpherical.radius += (camTargetSpherical.radius - camSpherical.radius) * 0.08;
+        camSpherical.theta += (camTargetSpherical.theta - camSpherical.theta) * 0.08;
+        camSpherical.phi += (camTargetSpherical.phi - camSpherical.phi) * 0.08;
+        camSpherical.target.lerp(camTargetSpherical.target, 0.08);
+
+        const sinPhi = Math.sin(camSpherical.phi);
+        mainCamera.position.set(
+          camSpherical.target.x + camSpherical.radius * sinPhi * Math.sin(camSpherical.theta),
+          camSpherical.target.y + camSpherical.radius * Math.cos(camSpherical.phi),
+          camSpherical.target.z + camSpherical.radius * sinPhi * Math.cos(camSpherical.theta)
+        );
+        mainCamera.lookAt(camSpherical.target);
+
+        // 9. Render Single View or 4-VIEWS CAD Split
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+
+        if (!state.quadView) {
+          renderer.setScissorTest(false);
+          renderer.setViewport(0, 0, w, h);
+          renderer.render(scene, mainCamera);
+
+          if (state.showAnnotations) {
+            calloutElements.forEach(({ def, el }) => {
+              def.anchorObj.getWorldPosition(tempVec);
+              tempVec.add(def.offset);
+              tempVec.project(mainCamera);
+              if (tempVec.z > 1) {
+                el.style.opacity = '0';
+              } else {
+                const sx = (tempVec.x * 0.5 + 0.5) * w;
+                const sy = (-tempVec.y * 0.5 + 0.5) * h;
+                el.style.left = `${sx}px`;
+                el.style.top = `${sy}px`;
+                el.style.opacity = '1';
+              }
+            });
+          }
+        } else {
+          renderer.setScissorTest(true);
+          const halfW = Math.floor(w / 2);
+          const halfH = Math.floor(h / 2);
+          const subAspect = halfW / halfH;
+
+          mainCamera.aspect = subAspect;
+          mainCamera.updateProjectionMatrix();
+          renderer.setViewport(0, halfH, halfW, halfH);
+          renderer.setScissor(0, halfH, halfW, halfH);
+          renderer.render(scene, mainCamera);
+
+          topCamera.aspect = subAspect;
+          topCamera.updateProjectionMatrix();
+          topCamera.position.set(0, 19.5, -0.3);
+          topCamera.lookAt(0, 0, -0.3);
+          renderer.setViewport(halfW, halfH, w - halfW, halfH);
+          renderer.setScissor(halfW, halfH, w - halfW, halfH);
+          renderer.render(scene, topCamera);
+
+          frontCamera.aspect = subAspect;
+          frontCamera.updateProjectionMatrix();
+          frontCamera.position.set(0, 0.5, 14.5);
+          frontCamera.lookAt(0, 0.0, 0);
+          renderer.setViewport(0, 0, halfW, halfH);
+          renderer.setScissor(0, 0, halfW, halfH);
+          renderer.render(scene, frontCamera);
+
+          sideCamera.aspect = subAspect;
+          sideCamera.updateProjectionMatrix();
+          sideCamera.position.set(17.5, 0.3, -0.3);
+          sideCamera.lookAt(0, 0.0, -0.3);
+          renderer.setViewport(halfW, 0, w - halfW, halfH);
+          renderer.setScissor(halfW, 0, w - halfW, halfH);
+          renderer.render(scene, sideCamera);
+
+          mainCamera.aspect = w / h;
+          mainCamera.updateProjectionMatrix();
+        }
+
+        if (state.isRecording) {
+          drawCompositeFrame();
+        }
+      }
+
+      animate();
+    })();
+  </script>
+</body>
+</html>
